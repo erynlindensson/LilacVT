@@ -210,11 +210,22 @@ alignment = 1
 custom_minimum_size = Vector2(150, 32)
 layout_mode = 2
 size_flags_horizontal = 8
-tooltip_text = "Edit Bindings"
+tooltip_text = "Set Expression"
 focus_mode = 0
 toggle_mode = true
 text = "Set Expression"
 icon = ExtResource("8_17a61")
+expand_icon = true
+
+[node name="Pose" type="Button" parent="HBoxContainer/VBoxContainer/ModelControls" unique_id=1422558835]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(150, 32)
+layout_mode = 2
+size_flags_horizontal = 8
+tooltip_text = "Set Pose"
+focus_mode = 0
+text = "Set Pose"
+icon = ExtResource("4_gnq47")
 expand_icon = true
 
 [node name="Bindings" type="Button" parent="HBoxContainer/VBoxContainer/ModelControls" unique_id=1012326904]
@@ -273,6 +284,7 @@ expand_icon = true
 [connection signal="pressed" from="HBoxContainer/VBoxContainer/Transformation/HBoxContainer2/ScaleToFit" to="." method="_on_scale_to_fit_pressed"]
 [connection signal="toggled" from="HBoxContainer/VBoxContainer/Transformation/HBoxContainer2/LockButton" to="." method="_on_lock_button_toggled"]
 [connection signal="pressed" from="HBoxContainer/VBoxContainer/ModelControls/Expression" to="." method="_on_expression_pressed"]
+[connection signal="pressed" from="HBoxContainer/VBoxContainer/ModelControls/Pose" to="." method="_on_pose_pressed"]
 [connection signal="pressed" from="HBoxContainer/VBoxContainer/ModelControls/Bindings" to="." method="_on_edit_bindings_pressed"]
 [connection signal="pressed" from="HBoxContainer/VBoxContainer/ModelControls/Settings" to="." method="_on_model_settings_pressed"]
 [connection signal="value_changed" from="HBoxContainer/VBoxContainer/AnimControls/FpsValue" to="." method="_on_fps_value_value_changed"]

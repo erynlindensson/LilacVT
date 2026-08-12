@@ -13,9 +13,14 @@ var active_model: VtModel
 @onready var capture_viewport = %SubViewport
 var _last_viewport_size := Vector2.ZERO
 
+## Global VRM stage lighting (applied when the active model supports it).
+var lighting_color: Color = Color(1.0, 0.956863, 0.839216, 1.0)
+var lighting_intensity: float = 1.0
+
 signal model_changed(model: VtModel)
 signal item_added(item: VtItem)
 signal item_removed(item: VtItem)
+signal lighting_changed(color: Color, intensity: float)
 
 var objects: Array :
 	get():
@@ -26,8 +31,8 @@ func toggle_ndi(enabled: bool) -> void:
 
 func toggle_bg(enabled: bool) -> void:
 	get_tree().root.transparent_bg = enabled
-	get_window().transparent = true
-	get_window().transparent_bg = true
+	get_window().transparent = enabled
+	get_window().transparent_bg = enabled
 	%Bg.visible = not enabled
 	
 func spawn_model(model: VtModel):
@@ -61,6 +66,7 @@ func spawn_model(model: VtModel):
 		get_tree().get_first_node_in_group("system:alert").alert("Unable to load model")	
 		return
 	active_model = model
+	_center_model_if_needed(model)
 	
 	create_tween().tween_property(
 		model, "position",
@@ -79,9 +85,20 @@ func spawn_model(model: VtModel):
 				remove_item(i, false)
 
 	# TODO if model had items pinned to it, load them in as well
+	apply_lighting()
 	model_changed.emit(active_model)
 	if prev_model != null:
 		prev_model.queue_free()
+
+func set_lighting(color: Color, intensity: float) -> void:
+	lighting_color = color
+	lighting_intensity = maxf(intensity, 0.0)
+	apply_lighting()
+	lighting_changed.emit(lighting_color, lighting_intensity)
+
+func apply_lighting() -> void:
+	if active_model != null and active_model.has_method("set_stage_lighting"):
+		active_model.set_stage_lighting(lighting_color, lighting_intensity)
 
 func spawn_item(item: VtItem, animate = true, reposition = true):
 	# do not allow spawning items if there is no active model
@@ -120,6 +137,20 @@ func spawn_item(item: VtItem, animate = true, reposition = true):
 	t.parallel().tween_property(
 		item, "modulate", Color.WHITE, 0.4
 	).from(Color.TRANSPARENT).set_ease(Tween.EASE_IN)
+
+## Keep models framed on screen when saved positions are off-stage or invalid.
+func _center_model_if_needed(model: VtModel) -> void:
+	var rect := model.get_viewport_rect()
+	if rect.size.x < 2.0 or rect.size.y < 2.0:
+		rect = Rect2(Vector2.ZERO, Vector2(capture_viewport.size))
+	var center := rect.get_center()
+	if not model.position.is_finite():
+		model.position = center
+		return
+	# Allow a small margin so barely-on-edge placements still count as visible.
+	var visible := rect.grow(maxf(rect.size.x, rect.size.y) * 0.05)
+	if not visible.has_point(model.position):
+		model.position = center
 
 func remove_item(item: VtItem, animated = true):
 	if animated:
@@ -161,6 +192,8 @@ func save_settings(data):
 func _ready() -> void:
 	_last_viewport_size = Vector2(capture_viewport.size)
 	capture_viewport.size_changed.connect(_on_capture_viewport_size_changed)
+	# Opaque stage background until prefs / camera panel enable transparency.
+	toggle_bg(false)
 
 func _on_capture_viewport_size_changed() -> void:
 	var new_size := Vector2(capture_viewport.size)

@@ -307,7 +307,7 @@ func _model_has_parameter(model_params: Dictionary, param_name: String) -> bool:
 	return model_params.has(param_name) or model_params.has(StringName(param_name))
 
 func _ensure_camera_registry() -> void:
-	if Registry["FaceAngleX"] != null:
+	if not Registry.parameters_in_group("Camera").is_empty():
 		return
 	# Subset used by DEFAULT_BINDINGS; full set is registered when a camera tracker starts.
 	Registry.add_parameter("FaceAngleX", Vector2(-30, 30))

@@ -1,0 +1,43 @@
+[gd_scene format=3 uid="uid://bqpose_selector01"]
+
+[ext_resource type="Script" path="res://studio/hud/item_panel/pose_selector/pose_selector.gd" id="1_pose"]
+
+[node name="PoseMenu" type="ConfirmationDialog"]
+oversampling_override = 1.0
+title = "Set Pose"
+initial_position = 2
+size = Vector2i(320, 175)
+visible = true
+unresizable = true
+script = ExtResource("1_pose")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 312.0
+offset_bottom = 126.0
+
+[node name="Poses" type="OptionButton" parent="VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="VBoxContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Duration"
+
+[node name="Duration" type="SpinBox" parent="VBoxContainer/HBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+max_value = 10.0
+step = 0.01
+value = 0.3
+alignment = 2
+suffix = "S"
+
+[connection signal="canceled" from="." to="." method="_on_canceled"]
+[connection signal="close_requested" from="." to="." method="_on_close_requested"]
+[connection signal="confirmed" from="." to="." method="_on_confirmed"]

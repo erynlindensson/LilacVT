@@ -74,10 +74,19 @@ max_value = 64335.0
 value = 11573.0
 alignment = 2
 
-[node name="AutoConnect" type="CheckButton" parent="." unique_id=718183635]
-visible = false
+[node name="CameraRow" type="HBoxContainer" parent="." unique_id=1281158964]
 layout_mode = 2
-text = "Auto Connect"
+
+[node name="CameraLabel" type="Label" parent="CameraRow" unique_id=1565707798]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Camera ID"
+
+[node name="CameraId" type="SpinBox" parent="CameraRow" unique_id=431934723]
+unique_name_in_owner = true
+layout_mode = 2
+max_value = 16.0
+alignment = 2
 
 [node name="HBoxContainer" type="HBoxContainer" parent="." unique_id=1728590766]
 layout_mode = 2
@@ -86,13 +95,13 @@ layout_mode = 2
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Connect"
+text = "Start Tracking"
 
 [node name="Disconnect" type="Button" parent="HBoxContainer" unique_id=646788445]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Disconnect"
+text = "Stop Tracking"
 
 [connection signal="toggled" from="BlinkSync" to="." method="_on_blink_sync_toggled"]
 [connection signal="pressed" from="HBoxContainer/Connect" to="." method="_on_connect_pressed"]

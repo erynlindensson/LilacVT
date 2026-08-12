@@ -30,12 +30,22 @@ func _ready() -> void:
 			%Icon.texture = preload("./motion.svg")
 			%ModelControls.show()
 	
+	_update_pose_button()
 	_on_transform_update(item.position, item.scale, item.rotation_degrees, Vector2.ZERO, Vector3.ZERO)
 	item.transform_updated.connect(_on_transform_update)
 	%XValue.value_changed.connect(_update_transform)
 	%YValue.value_changed.connect(_update_transform)
 	%Scale.value_changed.connect(_update_transform)
 	%Rotation.value_changed.connect(_update_transform)
+
+func _update_pose_button() -> void:
+	var target = model if model != null else item
+	var show_pose: bool = (
+		target != null
+		and target.has_method("list_poses")
+		and not target.list_poses().is_empty()
+	)
+	%Pose.visible = show_pose
 	
 func _update_pin_name(mesh: MeshInstance2D) -> void:
 	if mesh == null:
@@ -130,6 +140,11 @@ func _on_reset_fps_pressed() -> void:
 
 func _on_expression_pressed() -> void:
 	var popup = load("res://studio/hud/item_panel/expression_selector/expression_selector.tscn").instantiate()
+	popup.item = model
+	add_child(popup)
+
+func _on_pose_pressed() -> void:
+	var popup = load("res://studio/hud/item_panel/pose_selector/pose_selector.tscn").instantiate()
 	popup.item = model
 	add_child(popup)
 

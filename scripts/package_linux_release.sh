@@ -3,7 +3,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-VERSION="${VERSION:-0.1.2}"
+VERSION="${VERSION:-0.1.3}"
 NAME="open-vt-${VERSION}-linux-x86_64"
 SRC_BIN="${ROOT}/bin/linux"
 STAGE="${ROOT}/dist/${NAME}"
@@ -61,10 +61,9 @@ Requirements:
     OpenVT at its UDP port in Camera settings (feature tag: openseeface).
 
 Notes:
-  - Window transparency is enabled for OBS alpha capture.
+  - Transparent background is off by default; enable it in Camera → Application Settings.
   - Place Live2D / VRM models via the in-app model browser (user data dir).
-  - Known issue: some idle/motion clips may still turn clipped mesh regions white.
-    Rest pose and OpenSeeFace tracking are the supported smoke path for 0.1.0.
+  - OpenSeeFace can be set up with scripts/setup_openseeface.sh for the Start Tracking flow.
 
 Licenses: see licenses/
 EOF

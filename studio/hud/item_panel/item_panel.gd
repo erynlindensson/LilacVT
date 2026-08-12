@@ -11,11 +11,35 @@ func _ready():
 	stage.model_changed.connect(_on_stage_model_changed)
 	stage.item_added.connect(_on_stage_item_added)
 	stage.item_removed.connect(_on_stage_item_removed)
+	_configure_lighting_picker()
+	_sync_lighting_controls()
+
+func _configure_lighting_picker() -> void:
+	var picker: ColorPicker = %LightingColor.get_picker()
+	picker.edit_alpha = false
+	picker.color_mode = ColorPicker.MODE_HSV
+	picker.picker_shape = ColorPicker.SHAPE_HSV_WHEEL
+
+func _sync_lighting_controls() -> void:
+	%LightingColor.set_block_signals(true)
+	%LightingIntensity.set_block_signals(true)
+	%LightingColor.color = stage.lighting_color
+	%LightingIntensity.value = stage.lighting_intensity
+	%LightingColor.set_block_signals(false)
+	%LightingIntensity.set_block_signals(false)
+
+func _on_lighting_color_changed(color: Color) -> void:
+	stage.set_lighting(color, stage.lighting_intensity)
+
+func _on_lighting_intensity_changed(value: float) -> void:
+	stage.set_lighting(stage.lighting_color, value)
 
 func _on_directory_button_pressed() -> void:
 	OS.shell_open(ProjectSettings.globalize_path(ItemManager.FILE_DIR))
 	
 func setup():
+	_sync_lighting_controls()
+	stage.apply_lighting()
 	for i in stage.objects:
 		_on_stage_item_added(i)
 	

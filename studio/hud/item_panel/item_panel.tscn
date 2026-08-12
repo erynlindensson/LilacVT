@@ -80,6 +80,50 @@ layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
+[node name="Lighting" type="PanelContainer" parent="VBoxContainer/ScrollContainer/VBoxContainer2" unique_id=1683819255]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"SubPanelContainer"
+
+[node name="VBoxContainer" type="VBoxContainer" parent="VBoxContainer/ScrollContainer/VBoxContainer2/Lighting" unique_id=1683819256]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="LightingTitle" type="Label" parent="VBoxContainer/ScrollContainer/VBoxContainer2/Lighting/VBoxContainer" unique_id=1683819257]
+layout_mode = 2
+theme_type_variation = &"BoldLabel"
+text = "Lighting"
+
+[node name="ColorRow" type="HBoxContainer" parent="VBoxContainer/ScrollContainer/VBoxContainer2/Lighting/VBoxContainer" unique_id=1683819258]
+layout_mode = 2
+
+[node name="ColorLabel" type="Label" parent="VBoxContainer/ScrollContainer/VBoxContainer2/Lighting/VBoxContainer/ColorRow" unique_id=1683819259]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Lighting Color"
+
+[node name="LightingColor" type="ColorPickerButton" parent="VBoxContainer/ScrollContainer/VBoxContainer2/Lighting/VBoxContainer/ColorRow" unique_id=1683819260]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(64, 32)
+layout_mode = 2
+edit_alpha = false
+color = Color(1, 0.956863, 0.839216, 1)
+
+[node name="IntensityRow" type="VBoxContainer" parent="VBoxContainer/ScrollContainer/VBoxContainer2/Lighting/VBoxContainer" unique_id=1683819261]
+layout_mode = 2
+
+[node name="IntensityLabel" type="Label" parent="VBoxContainer/ScrollContainer/VBoxContainer2/Lighting/VBoxContainer/IntensityRow" unique_id=1683819262]
+layout_mode = 2
+text = "Lighting Intensity"
+
+[node name="LightingIntensity" type="HSlider" parent="VBoxContainer/ScrollContainer/VBoxContainer2/Lighting/VBoxContainer/IntensityRow" unique_id=1683819263]
+unique_name_in_owner = true
+layout_mode = 2
+min_value = 0.0
+max_value = 3.0
+step = 0.05
+value = 1.0
+
 [node name="StageItems" type="VBoxContainer" parent="VBoxContainer/ScrollContainer/VBoxContainer2" unique_id=766169634]
 unique_name_in_owner = true
 layout_mode = 2
@@ -130,5 +174,7 @@ expand_icon = true
 
 [connection signal="pressed" from="VBoxContainer/VBoxContainer/DirectoryButton" to="." method="_on_directory_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/VBoxContainer/HBoxContainer2/LoadButton" to="." method="_on_load_button_pressed"]
+[connection signal="color_changed" from="VBoxContainer/ScrollContainer/VBoxContainer2/Lighting/VBoxContainer/ColorRow/LightingColor" to="." method="_on_lighting_color_changed"]
+[connection signal="value_changed" from="VBoxContainer/ScrollContainer/VBoxContainer2/Lighting/VBoxContainer/IntensityRow/LightingIntensity" to="." method="_on_lighting_intensity_changed"]
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/AddButton" to="." method="_on_add_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/HBoxContainer/ClearButton" to="." method="_on_clear_button_pressed"]
