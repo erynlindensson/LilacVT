@@ -1,57 +1,97 @@
 <p align="center">
   <img src="branding/monochrome.svg" width="180" />
 </p>
-<p align="center">OpenVT is software for 2D Vtubing</p>
+<p align="center"><strong>OpenVT Lilac</strong> — a fork of OpenVT with enhanced VRM support</p>
+<p align="center">
+  <a href="https://github.com/erynlindensson/openvt-lilac/releases">Releases</a>
+  ·
+  <a href="https://github.com/erodozer/open-vt">Upstream OpenVT</a>
+</p>
 
 <img src="https://img.itch.zone/aW1nLzIzOTYyMzE3LnBuZw==/original/RvA2OU.png" />
 <img src="https://img.itch.zone/aW1nLzI0MzgwMzM0LnBuZw==/original/yLLOfx.png" />
 
-### Supported Trackers
+## Credits
 
-- OpenSeeFace (Separate executable required)
-- VTubeStudio (TCP over Wi-fi)
+OpenVT Lilac is built on **[OpenVT](https://github.com/erodozer/open-vt)** by **[erodozer](https://github.com/erodozer)**.
+The core Live2D VTubing app, Godot architecture, VTube Studio–oriented workflows, and Linux-first design are their work.
+Lilac extends that foundation; please star and support upstream when you can.
 
-### Differences from Alternatives
+## What is Lilac?
+
+[OpenVT](https://github.com/erodozer/open-vt) is open-source software for 2D VTubing (Live2D-first, Godot 4).
+**OpenVT Lilac** is a community fork focused on making **VRM avatars** more usable alongside Live2D: face tracking, expressions, simple body poses, scene lighting, and a smoother OpenSeeFace setup on Linux.
+
+Latest packaged build: **[v0.1.3](https://github.com/erynlindensson/openvt-lilac/releases/tag/v0.1.3)**.
+
+## Lilac highlights (vs upstream OpenVT)
+
+- **Enhanced VRM support** — model discovery/import into `VrmModels`, viewport lighting, drag/zoom framing, and blueprint defaults for face tracking parameters.
+- **OpenSeeFace integration** — facetracker is **vendored** under `thirdparty/openseeface/` with `scripts/setup_openseeface.sh`; tracking starts only when you press **Start Tracking** (not on mode select).
+- **Expressions for VRM** — Set Expression lists standard VRM blendshapes (moods, visemes, blinks, customs) and applies them exclusively so morphs do not stack.
+- **Easy Poses** — Set Pose next to Expressions with built-in body presets (Neutral, Wave, HandsOnHips, ArmsCrossed, Thinking, Point) that keep head tracking free.
+- **Scene lighting controls** — Items panel **Lighting** group: HSV color wheel + intensity for VRM key/fill/ambient lights.
+- **Opaque background by default** — toggle **Transparent Background** under Camera → Application Settings when you need OBS alpha capture.
+- **Live2D fixes carried forward** — idle/mask white-out isolation and related tracking polish from the Lilac line of work.
+
+Upstream strengths (Linux-native, open source, VTS-oriented assets, pixel filtering, popout controls) still apply.
+
+### Supported trackers
+
+- **OpenSeeFace** — bundled sources + setup script; use **Start Tracking** / **Stop Tracking** in Camera settings (feature tag: `openseeface`)
+- **VTube Studio** — TCP over Wi-Fi (phone app), as in upstream
+
+### Differences from closed-source alternatives
 
 - native Linux support
-- open source development allowing for community driven feature delivery 
-- transparent window support to simplify alpha based capture in OBS
-- adjustable filtering settings, allowing for sharper scaling of pixel art models
+- open source development and community-driven features
+- transparent window support for alpha capture in OBS (opt-in in Lilac)
+- adjustable filtering for sharper scaling of pixel art models
 - multi-window popout controls
 
-### VTube Studio Compatibility
+### VTube Studio compatibility
 
-OpenVT strives to be largely compatible with [VTubeStudio](https://denchisoft.com/).
-Assets can be used between the two, sharing the same files without need to make adjustments.  Any OpenVT specific settings are kept separately to avoid possible collisions with namespacing.  Where possible, VTubeStudio will still be respected as the standard.
+OpenVT (and Lilac) strive to stay largely compatible with [VTube Studio](https://denchisoft.com/).
+Live2D assets can be shared without renaming; OpenVT-specific settings stay in separate files.
+Feature parity with VTS remains a goal, excluding plugins and VNet.
 
-Feature parity with VTS is a goal, excluding more complex features such as plugin compatibility, and VNet.
+## How is it built?
 
-## How is it Built?
+Most of the VTuber ecosystem uses Unity. OpenVT is built in **Godot 4**, using open-source face tracking and native model libraries, with Linux desktop as a priority.
 
-The majority of the vtuber ecosystem is built in Unity largely due to familiarity of the software for 3D applications and the available, well documented, first-party support Live2D by Cubism.
-By contrast, OpenVT is built in Godot, leveraging much of the same open-source software for facial tracking, and native libraries for controlling models.  The application is designed to be easy to use and provide a consistent experience for streaming across operating systems, with Linux desktop support being a top priority.
+Lilac keeps that approach: **GDScript** first, latest stable Godot **4.x**, plus vendored **godot-vrm** / **MToon** for VRM and a local OpenSeeFace tree for webcam tracking.
 
 ### Guidelines
 
-OpenVT attempts to use as much out of the box functionality of Godot as possible with low overhead and dependencies, as it's already a rather feature rich runtime.
-As such, GDScript is the primary language of the codebase.
+Prefer Godot built-ins and low dependency overhead. Target the latest stable 4.x editor and export templates for standalone binaries.
+Lilac currently builds against a custom Godot build with Ayagami (Live2D) support.
 
-The codebase will generally target the latest stable 4.x series Godot runtimes to edit the project.
-Be sure to grab the export templates if you wish to create standalone binaries.
+### Building dependencies
 
-### Building Dependencies
+Run dependency builds before opening the project so GDExtension libraries are present.
 
-This should be done before attempting to open or run the project, otherwise Godot will complain about missing files and classes.
+Follow submodule / `thirdparty/` readmes as needed, then:
 
-Please follow the readmes and build instructions of any git submodules included in the [thirdparty/](./thirdparty) directory to know of any specifics.  Git submodules are subject to changes as critical improvements in dependencies are made.
+```bash
+./build_dependencies.sh
+./scripts/setup_openseeface.sh   # Lilac: OpenSeeFace venv + deps
+```
 
-The provided [build_dependencies.sh](./build_dependencies.sh) script is designed to build each submodule and move its outputs to the required locations in the project filesystem for openvt to run.
+Export Linux package (after a release export):
+
+```bash
+godot4-ayagami --headless --path . --export-release linux bin/linux/openvt.x86_64
+VERSION=0.1.3 ./scripts/package_linux_release.sh
+```
 
 ## References
 
-- https://github.com/DenchiSoft/VTubeStudio
-- https://github.com/emilianavt/OpenSeeFace
+- Upstream OpenVT: https://github.com/erodozer/open-vt
+- VTube Studio: https://github.com/DenchiSoft/VTubeStudio
+- OpenSeeFace: https://github.com/emilianavt/OpenSeeFace
+- godot-vrm: https://github.com/V-Sekai/godot-vrm
 
 ## Licensing
 
-Additional licenses are found in the [/license](./license) directory.
+Lilac inherits OpenVT’s licensing. Additional third-party licenses are under [`license/`](./license) and bundled release `licenses/`.
+Respect Live2D, VRM model, and tracker license terms for any assets you use.
