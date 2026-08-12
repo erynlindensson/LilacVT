@@ -3,7 +3,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-VERSION="${VERSION:-0.1.1}"
+VERSION="${VERSION:-0.1.2}"
 NAME="open-vt-${VERSION}-linux-x86_64"
 SRC_BIN="${ROOT}/bin/linux"
 STAGE="${ROOT}/dist/${NAME}"
