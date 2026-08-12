@@ -11,7 +11,7 @@ layout_mode = 2
 [node name="HBoxContainer" type="HBoxContainer" parent="VBoxContainer" unique_id=360195459]
 layout_mode = 2
 
-[node name="Icon" type="TextureRect" parent="VBoxContainer/HBoxContainer" unique_id=1097812394]
+[node name="Icon" type="TextureRect" parent="VBoxContainer/HBoxContainer" unique_id=1097812394 groups=["theme:ink"]]
 unique_name_in_owner = true
 modulate = Color(0.298039, 0.282353, 0.239216, 1)
 custom_minimum_size = Vector2(32, 0)

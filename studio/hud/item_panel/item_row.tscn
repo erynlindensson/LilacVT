@@ -56,7 +56,7 @@ size_flags_horizontal = 3
 [node name="HBoxContainer" type="HBoxContainer" parent="HBoxContainer/VBoxContainer" unique_id=745172468]
 layout_mode = 2
 
-[node name="Icon" type="TextureRect" parent="HBoxContainer/VBoxContainer/HBoxContainer" unique_id=1072054020]
+[node name="Icon" type="TextureRect" parent="HBoxContainer/VBoxContainer/HBoxContainer" unique_id=1072054020 groups=["theme:ink"]]
 unique_name_in_owner = true
 modulate = Color(0.298039, 0.282353, 0.239216, 1)
 custom_minimum_size = Vector2(28, 0)
@@ -108,7 +108,7 @@ theme_override_constants/separation = 16
 [node name="HBoxContainer2" type="HBoxContainer" parent="HBoxContainer/VBoxContainer/Transformation" unique_id=356612089]
 layout_mode = 2
 
-[node name="TextureRect" type="TextureRect" parent="HBoxContainer/VBoxContainer/Transformation/HBoxContainer2" unique_id=446385170]
+[node name="TextureRect" type="TextureRect" parent="HBoxContainer/VBoxContainer/Transformation/HBoxContainer2" unique_id=446385170 groups=["theme:ink"]]
 modulate = Color(0.298039, 0.282353, 0.239216, 1)
 custom_minimum_size = Vector2(30, 0)
 layout_mode = 2

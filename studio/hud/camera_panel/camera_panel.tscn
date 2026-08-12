@@ -66,6 +66,20 @@ vertical_alignment = 1
 unique_name_in_owner = true
 layout_mode = 2
 
+[node name="ThemeRow" type="HBoxContainer" parent="ScrollContainer/Accordion/Application Settings/VBoxContainer" unique_id=1400090516]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="ScrollContainer/Accordion/Application Settings/VBoxContainer/ThemeRow" unique_id=2033207879]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 1
+text = "UI Theme"
+vertical_alignment = 1
+
+[node name="UITheme" type="OptionButton" parent="ScrollContainer/Accordion/Application Settings/VBoxContainer/ThemeRow" unique_id=1581570413]
+unique_name_in_owner = true
+layout_mode = 2
+
 [node name="HBoxContainer4" type="HBoxContainer" parent="ScrollContainer/Accordion/Application Settings/VBoxContainer" unique_id=963054852]
 layout_mode = 2
 
@@ -186,6 +200,7 @@ layout_mode = 2
 
 [connection signal="item_selected" from="ScrollContainer/Accordion/Application Settings/VBoxContainer/HBoxContainer3/FPS" to="." method="_on_fps_value_item_selected"]
 [connection signal="toggled" from="ScrollContainer/Accordion/Application Settings/VBoxContainer/HBoxContainer2/TransparencyToggle" to="." method="_on_transparency_toggle_toggled"]
+[connection signal="item_selected" from="ScrollContainer/Accordion/Application Settings/VBoxContainer/ThemeRow/UITheme" to="." method="_on_ui_theme_item_selected"]
 [connection signal="toggled" from="ScrollContainer/Accordion/Application Settings/VBoxContainer/HBoxContainer4/MicrophoneToggle" to="." method="_on_microphone_toggle_toggled"]
 [connection signal="toggled" from="ScrollContainer/Accordion/Application Settings/VBoxContainer/VirtualWebcam/HBoxContainer/V4L2Toggle" to="." method="_on_v4l2_toggled"]
 [connection signal="item_selected" from="ScrollContainer/Accordion/Application Settings/VBoxContainer/VirtualWebcam/VirtualCameraDevice" to="." method="_on_loopback_item_selected"]

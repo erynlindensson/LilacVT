@@ -13,7 +13,7 @@ layout_mode = 2
 size_flags_horizontal = 3
 placeholder_text = "Search..."
 
-[node name="TextureRect" type="TextureRect" parent="." unique_id=423873289]
+[node name="TextureRect" type="TextureRect" parent="." unique_id=423873289 groups=["theme:ink"]]
 modulate = Color(0.298039, 0.282353, 0.239216, 1)
 texture_filter = 2
 custom_minimum_size = Vector2(32, 0)

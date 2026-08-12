@@ -10,6 +10,7 @@ signal update_bg_color(color: Color)
 @onready var mic_toggle: CheckButton = %MicrophoneToggle
 @onready var face_trackers: OptionButton = %TrackingSource
 @onready var fps_option: OptionButton = %FPS
+@onready var ui_theme_option: OptionButton = %UITheme
 
 @onready var parameter_list = %ParameterList
 @onready var v4l2_stream: VirtualCamera = get_tree().get_first_node_in_group("output:v4l2")
@@ -18,6 +19,7 @@ func _get_title():
 	return "Settings"
 
 func _ready() -> void:
+	_populate_ui_theme_options()
 	if OS.has_feature("openseeface") or OS.is_debug_build():
 		face_trackers.add_item("OpenSeeFace (Webcam)")
 		face_trackers.set_item_metadata(face_trackers.item_count - 1, preload("res://lib/tracking/camera/openseeface/osf_tracker.gd"))
@@ -69,6 +71,27 @@ func _ready() -> void:
 	else:
 		%VirtualWebcam.queue_free()
 
+func _populate_ui_theme_options() -> void:
+	ui_theme_option.clear()
+	for palette_id in ThemeManager.get_palette_ids():
+		var idx := ui_theme_option.item_count
+		ui_theme_option.add_item(ThemeManager.get_palette_display_name(palette_id))
+		ui_theme_option.set_item_metadata(idx, palette_id)
+	_select_ui_theme_option(ThemeManager.active_palette_id)
+
+func _select_ui_theme_option(palette_id: String) -> void:
+	for i in range(ui_theme_option.item_count):
+		if String(ui_theme_option.get_item_metadata(i)) == palette_id:
+			ui_theme_option.select(i)
+			return
+	if ui_theme_option.item_count > 0:
+		ui_theme_option.select(0)
+
+func _on_ui_theme_item_selected(index: int) -> void:
+	var palette_id := String(ui_theme_option.get_item_metadata(index))
+	ThemeManager.apply_palette(palette_id)
+	Preferences.save_data()
+
 func _on_tracker_system_tracker_changed(new_tracker: Tracker) -> void:
 	var config = Control.new()
 	if new_tracker != null:
@@ -99,6 +122,9 @@ func load_settings(data: Dictionary):
 	face_trackers.select(data.get("camera", {}).get("tracking", 0))
 	fps_option.select(data.get("window", {}).get("fps", 0))
 	_on_fps_value_item_selected(fps_option.get_selected_id())
+	var palette_id := String(data.get("ui", {}).get("palette", ThemeManager.DEFAULT_PALETTE))
+	ThemeManager.apply_palette(palette_id)
+	_select_ui_theme_option(ThemeManager.active_palette_id)
 	if tracking_system:
 		tracking_system.activate_tracker(
 			face_trackers.get_selected_metadata().new()
@@ -111,8 +137,11 @@ func save_settings(data: Dictionary):
 	w["fps"] = fps_option.get_selected_id()
 	var c = data.get("camera", {})
 	c["tracking"] = face_trackers.get_selected_id()
+	var ui = data.get("ui", {})
+	ui["palette"] = ThemeManager.active_palette_id
 	data["window"] = w
 	data["camera"] = c
+	data["ui"] = ui
 	data["microphone"] = mic_toggle.button_pressed
 
 func _on_fps_value_item_selected(index: int) -> void:

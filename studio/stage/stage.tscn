@@ -17,7 +17,7 @@ script = ExtResource("1_ptuf8")
 unique_name_in_owner = true
 layer = -1
 
-[node name="BgFill" type="TextureRect" parent="Bg" unique_id=1209091148]
+[node name="BgFill" type="TextureRect" parent="Bg" unique_id=1209091148 groups=["theme:hud_gradient"]]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0

@@ -36,7 +36,7 @@ text = "Open Item Directory"
 [node name="HBoxContainer2" type="HBoxContainer" parent="VBoxContainer/VBoxContainer" unique_id=747187258]
 layout_mode = 2
 
-[node name="TextureRect" type="TextureRect" parent="VBoxContainer/VBoxContainer/HBoxContainer2" unique_id=321830455]
+[node name="TextureRect" type="TextureRect" parent="VBoxContainer/VBoxContainer/HBoxContainer2" unique_id=321830455 groups=["theme:ink"]]
 modulate = Color(0.298039, 0.282353, 0.239216, 1)
 custom_minimum_size = Vector2(32, 0)
 layout_mode = 2
@@ -131,7 +131,7 @@ size_flags_horizontal = 3
 size_flags_vertical = 3
 theme_override_constants/separation = 24
 
-[node name="Label" type="Label" parent="VBoxContainer" unique_id=1992577208]
+[node name="Label" type="Label" parent="VBoxContainer" unique_id=1992577208 groups=["theme:muted_label"]]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.3, 0.284, 0.24000001, 0.5294118)
 theme_override_font_sizes/font_size = 12

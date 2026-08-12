@@ -47,7 +47,7 @@ unique_name_in_owner = true
 layer = -1
 visible = false
 
-[node name="Gradient" type="TextureRect" parent="Bg" unique_id=1942214844]
+[node name="Gradient" type="TextureRect" parent="Bg" unique_id=1942214844 groups=["theme:hud_gradient"]]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
