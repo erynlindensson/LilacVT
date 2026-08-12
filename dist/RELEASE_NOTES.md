@@ -1,6 +1,7 @@
 # OpenVT v0.1.3 — Linux x86_64
 
 - Artifact: `open-vt-0.1.3-linux-x86_64.tar.gz`
+- SHA256: `d6666419f61929b7fb9c9000d24198447fc26ca9770c73da98cb01d2b9de9ebc`
 
 ## Changes
 
