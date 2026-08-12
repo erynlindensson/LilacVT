@@ -23,7 +23,7 @@ Lilac extends that foundation; please star and support upstream when you can.
 [OpenVT](https://github.com/erodozer/open-vt) is open-source software for 2D VTubing (Live2D-first, Godot 4).
 **OpenVT Lilac** is a community fork focused on making **VRM avatars** more usable alongside Live2D: face tracking, expressions, simple body poses, scene lighting, pickable UI themes, and a smoother OpenSeeFace setup on Linux.
 
-Latest packaged build: **[v0.1.4](https://github.com/erynlindensson/openvt-lilac/releases/tag/v0.1.4)**.
+Latest packaged build: **[v0.1.5](https://github.com/erynlindensson/openvt-lilac/releases/tag/v0.1.5)**.
 
 ## Lilac highlights (vs upstream OpenVT)
 
@@ -83,7 +83,7 @@ Export Linux package (after a release export):
 
 ```bash
 godot4-ayagami --headless --path . --export-release linux bin/linux/openvt.x86_64
-VERSION=0.1.4 ./scripts/package_linux_release.sh
+VERSION=0.1.5 ./scripts/package_linux_release.sh
 ```
 
 ## References

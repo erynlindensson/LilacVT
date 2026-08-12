@@ -1,13 +1,15 @@
-# OpenVT Lilac v0.1.4 — Linux x86_64
+# OpenVT Lilac v0.1.5 — Linux x86_64
 
-- Artifact: `open-vt-0.1.4-linux-x86_64.tar.gz`
-- SHA256: `9d46c50a8fceaecb226d803803732a7d87807d70d3101b9e1e351f7b4a680cbf`
+- Artifact: `open-vt-0.1.5-linux-x86_64.tar.gz`
+- SHA256: _(filled after package)_
 
 ## Changes
 
-- **Bundle OpenSeeFace** in the release (`thirdparty/openseeface/` + `scripts/setup_openseeface.sh`).
-- **Auto-setup on first launch** — creates the Python venv next to the app (requires `python3` / `python3-venv` and network once).
-- OSF process looks beside the executable instead of inside the packed `res://` tree.
+- **Pickable UI themes** — Lilac (default), Classic, Rose, Slate in Camera → Application Settings; live remapping through the project theme.
+- **SpinBox arrows** — compact stacked up/down icons that survive theme apply (no missing/giant placeholders).
+- **Live2D Set Pose** — lists model motions (plus Neutral); Set Expression stays `.exp3.json`-only (“No Expressions Present” when none).
+- **Ayagami rebuild** — opacity clamp + canvas-sized mask viewports for motion white-out (debug + release `.so`).
+- Carries forward v0.1.4 OpenSeeFace bundling / first-launch setup.
 
 ## Requirements for tracking
 
@@ -16,5 +18,8 @@
 
 ## Smoke
 
-- [ ] Fresh extract → first run shows OSF setup toast and creates `thirdparty/openseeface/.venv`
-- [ ] Start Tracking works without manually running the setup script
+- [ ] Fresh extract → first run creates `thirdparty/openseeface/.venv` if needed
+- [ ] UI Theme switch updates panels/icons without restart
+- [ ] SpinBox arrows sized correctly on Transform fields
+- [ ] Live2D Set Pose plays a motion; Haru clipped regions stay textured
+- [ ] `Ayagami blend modes registered` on boot
