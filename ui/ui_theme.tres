@@ -657,7 +657,6 @@ SpinBox/icons/up = ExtResource("5_b7yax")
 SpinBox/icons/up_disabled = ExtResource("5_b7yax")
 SpinBox/icons/up_hover = ExtResource("5_b7yax")
 SpinBox/icons/up_pressed = ExtResource("5_b7yax")
-SpinBox/icons/updown = null
 SubPanelContainer/base_type = &"PanelContainer"
 SubPanelContainer/styles/panel = SubResource("StyleBoxFlat_piqja")
 TabBar/colors/font_hovered_color = Color(0.811765, 0.788235, 0.698039, 1)

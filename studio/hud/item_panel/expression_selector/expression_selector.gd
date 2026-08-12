@@ -7,7 +7,7 @@ var item: VtModel
 func _ready():
 	var controller = item.get_expression_controller() if item.has_method("get_expression_controller") else null
 	if controller == null or controller.expressions.is_empty():
-		%Expressions.add_item("No expressions")
+		%Expressions.add_item("No Expressions Present")
 		%Expressions.disabled = true
 		get_ok_button().disabled = true
 		return

@@ -252,7 +252,9 @@ func get_animation_player() -> AnimationPlayer:
 	return model.get_node("OneshotMotionController")
 	
 func get_expression_controller() -> AyagamiExpressionMutator:
-	return model.get_node("ExpressionController")
+	if model == null:
+		return null
+	return model.get_node_or_null("ExpressionController")
 
 func toggle_expression(expression_name: String, activate: bool = true, duration: float = 1.0, exclusive: bool = false):
 	var expression_controller = get_expression_controller()
@@ -261,10 +263,57 @@ func toggle_expression(expression_name: String, activate: bool = true, duration:
 	if expression_name.is_empty():
 		expression_controller.reset()
 	elif activate:
+		if exclusive:
+			expression_controller.reset()
 		expression_controller.set("expressions/%s" % expression_name, true)
 	else:
 		expression_controller.set("expressions/%s" % expression_name, false)
-		
+
+func list_poses() -> PackedStringArray:
+	var poses := PackedStringArray(["Neutral"])
+	for motion_name in _list_motion_names(true):
+		poses.append(motion_name)
+	return poses
+
+func apply_pose(pose_name: String, _duration: float = 0.3) -> void:
+	if pose_name.is_empty() or pose_name == "Neutral":
+		reset_pose(_duration)
+		return
+	_play_oneshot_motion(pose_name)
+
+func reset_pose(_duration: float = 0.3) -> void:
+	_stop_oneshot_motion()
+
+func _list_motion_names(exclude_idle: bool) -> PackedStringArray:
+	var names := PackedStringArray()
+	var anim := get_animation_player()
+	if anim == null:
+		return names
+	var idle_name := ""
+	var idle := get_idle_animation_player()
+	if idle != null:
+		idle_name = String(idle.current_animation)
+	for motion_name in anim.get_animation_list():
+		var key := String(motion_name)
+		if exclude_idle and not idle_name.is_empty() and key == idle_name:
+			continue
+		if exclude_idle and key.to_lower().contains("idle"):
+			continue
+		names.append(key)
+	return names
+
+func _play_oneshot_motion(motion_name: String) -> void:
+	var anim := get_animation_player()
+	if anim == null or not anim.has_animation(motion_name):
+		return
+	anim.stop()
+	anim.play(motion_name)
+
+func _stop_oneshot_motion() -> void:
+	var anim := get_animation_player()
+	if anim == null:
+		return
+	anim.stop()
 
 ## save bidirectional vts compatible settings
 func _save_to_vts():

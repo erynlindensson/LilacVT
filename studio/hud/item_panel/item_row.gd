@@ -31,6 +31,12 @@ func _ready() -> void:
 			%ModelControls.show()
 	
 	_update_pose_button()
+	var target = model if model != null else item
+	if target != null:
+		if target.has_signal("loaded"):
+			target.loaded.connect(_update_pose_button)
+		if target.has_signal("initialized"):
+			target.initialized.connect(_update_pose_button)
 	_on_transform_update(item.position, item.scale, item.rotation_degrees, Vector2.ZERO, Vector3.ZERO)
 	item.transform_updated.connect(_on_transform_update)
 	%XValue.value_changed.connect(_update_transform)
@@ -140,12 +146,12 @@ func _on_reset_fps_pressed() -> void:
 
 func _on_expression_pressed() -> void:
 	var popup = load("res://studio/hud/item_panel/expression_selector/expression_selector.tscn").instantiate()
-	popup.item = model
+	popup.item = model if model != null else item
 	add_child(popup)
 
 func _on_pose_pressed() -> void:
 	var popup = load("res://studio/hud/item_panel/pose_selector/pose_selector.tscn").instantiate()
-	popup.item = model
+	popup.item = model if model != null else item
 	add_child(popup)
 
 func _on_pin_target_pressed() -> void:

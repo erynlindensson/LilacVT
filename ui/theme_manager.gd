@@ -7,6 +7,9 @@ signal palette_changed(palette_id: String)
 const BASE_THEME := preload("res://ui/ui_theme.tres")
 const DEFAULT_PALETTE := "lilac"
 const SETTINGS_PATH := "user://settings.json"
+const SPINBOX_UP := preload("res://ui/icons/angle-up.svg")
+const SPINBOX_DOWN := preload("res://ui/icons/angle-down.svg")
+var _spinbox_updown: Texture2D
 
 ## Classic source tokens as stored in ui_theme.tres (and matching hardcoded UI).
 const CLASSIC := {
@@ -192,9 +195,60 @@ func _install_into_project_theme(src: Theme) -> void:
 		for font_size_name in src.get_font_size_list(type_name):
 			project.set_font_size(font_size_name, type_name, src.get_font_size(font_size_name, type_name))
 		for icon_name in src.get_icon_list(type_name):
-			project.set_icon(icon_name, type_name, src.get_icon(icon_name, type_name))
+			var icon := src.get_icon(icon_name, type_name)
+			# Skip empty/broken placeholders (e.g. former SpinBox/updown = null → DPITexture).
+			if icon == null or icon.get_width() < 1 or icon.get_height() < 1:
+				if project.has_icon(icon_name, type_name):
+					project.clear_icon(icon_name, type_name)
+				continue
+			project.set_icon(icon_name, type_name, icon)
 		for style_name in src.get_stylebox_list(type_name):
 			project.set_stylebox(style_name, type_name, src.get_stylebox(style_name, type_name))
+	_ensure_spinbox_icons(project)
+	_ensure_spinbox_icons(src)
+
+func _ensure_spinbox_icons(theme: Theme) -> void:
+	if theme == null:
+		return
+	# Godot 4.7: a valid SpinBox/updown icon replaces separate up/down icons.
+	# Engine default updown is a 0x0 ImageTexture (missing-texture placeholder).
+	# Build a compact 16x32 stacked glyph from the 16px arrows.
+	var updown := _get_spinbox_updown_icon()
+	for icon_name in ["up", "up_hover", "up_pressed", "up_disabled"]:
+		theme.set_icon(icon_name, "SpinBox", SPINBOX_UP)
+	for icon_name in ["down", "down_hover", "down_pressed", "down_disabled"]:
+		theme.set_icon(icon_name, "SpinBox", SPINBOX_DOWN)
+	theme.set_icon("updown", "SpinBox", updown)
+	var default_theme := ThemeDB.get_default_theme()
+	if default_theme != null:
+		default_theme.set_icon("updown", "SpinBox", updown)
+		default_theme.set_icon("up", "SpinBox", SPINBOX_UP)
+		default_theme.set_icon("down", "SpinBox", SPINBOX_DOWN)
+
+func _get_spinbox_updown_icon() -> Texture2D:
+	if _spinbox_updown != null:
+		return _spinbox_updown
+	var up_img := SPINBOX_UP.get_image()
+	var down_img := SPINBOX_DOWN.get_image()
+	if up_img == null or down_img == null:
+		_spinbox_updown = SPINBOX_UP
+		return _spinbox_updown
+	up_img = up_img.duplicate()
+	down_img = down_img.duplicate()
+	if up_img.is_compressed():
+		up_img.decompress()
+	if down_img.is_compressed():
+		down_img.decompress()
+	var w: int = maxi(up_img.get_width(), down_img.get_width())
+	var h: int = up_img.get_height() + down_img.get_height()
+	var out := Image.create(w, h, false, Image.FORMAT_RGBA8)
+	out.fill(Color(0, 0, 0, 0))
+	var up_x := int((w - up_img.get_width()) / 2.0)
+	var down_x := int((w - down_img.get_width()) / 2.0)
+	out.blit_rect(up_img, Rect2i(Vector2i.ZERO, up_img.get_size()), Vector2i(up_x, 0))
+	out.blit_rect(down_img, Rect2i(Vector2i.ZERO, down_img.get_size()), Vector2i(down_x, up_img.get_height()))
+	_spinbox_updown = ImageTexture.create_from_image(out)
+	return _spinbox_updown
 
 func _build_mapping(dest: Dictionary) -> Dictionary:
 	var mapping: Dictionary = {}
@@ -253,11 +307,9 @@ func _recolor_theme(theme: Theme, mapping: Dictionary) -> void:
 			var recolored := _recolor_stylebox(sb, mapping)
 			if recolored != null:
 				theme.set_stylebox(style_name, type_name, recolored)
-		for icon_name in theme.get_icon_list(type_name):
-			var icon := theme.get_icon(icon_name, type_name)
-			var recolored_icon := _recolor_texture(icon, mapping)
-			if recolored_icon != null:
-				theme.set_icon(icon_name, type_name, recolored_icon)
+		# Keep original icon textures. Pixel-remapping SVG-backed CompressedTexture2D
+		# into ImageTexture breaks SpinBox up/down (missing-texture placeholder).
+		# SpinBox / icon chrome already follow remapped *_icon_modulate colors.
 
 func _recolor_stylebox(sb: StyleBox, mapping: Dictionary) -> StyleBox:
 	if sb == null:
@@ -274,29 +326,6 @@ func _recolor_stylebox(sb: StyleBox, mapping: Dictionary) -> StyleBox:
 			padded.stylebox = _recolor_stylebox(padded.stylebox, mapping)
 		return padded
 	return sb.duplicate()
-
-func _recolor_texture(tex: Texture2D, mapping: Dictionary) -> Texture2D:
-	if tex == null:
-		return null
-	var img := tex.get_image()
-	if img == null:
-		return tex
-	img = img.duplicate()
-	if img.is_compressed():
-		img.decompress()
-	var changed := false
-	for y in range(img.get_height()):
-		for x in range(img.get_width()):
-			var c := img.get_pixel(x, y)
-			if c.a < 0.01:
-				continue
-			var mapped := _map_color(c, mapping)
-			if mapped != c:
-				img.set_pixel(x, y, mapped)
-				changed = true
-	if not changed:
-		return tex
-	return ImageTexture.create_from_image(img)
 
 func _apply_hardcoded_ui() -> void:
 	var tree := get_tree()
