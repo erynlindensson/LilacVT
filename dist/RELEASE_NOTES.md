@@ -1,21 +1,20 @@
-# OpenVT v0.1.3 — Linux x86_64
+# OpenVT Lilac v0.1.4 — Linux x86_64
 
-- Artifact: `open-vt-0.1.3-linux-x86_64.tar.gz`
-- SHA256: `d6666419f61929b7fb9c9000d24198447fc26ca9770c73da98cb01d2b9de9ebc`
+- Artifact: `open-vt-0.1.4-linux-x86_64.tar.gz`
+- SHA256: `9d46c50a8fceaecb226d803803732a7d87807d70d3101b9e1e351f7b4a680cbf`
 
 ## Changes
 
-- **VRM face tracking** via OpenSeeFace (Start/Stop Tracking; no auto-start).
-- **VRM Expressions** — standard blendshapes in Set Expression (exclusive apply).
-- **VRM Poses** — Set Pose next to Expressions (Neutral, Wave, HandsOnHips, ArmsCrossed, Thinking, Point).
-- **Lighting** controls in the Items panel (color HSV wheel + intensity).
-- **Opaque background by default**; toggle under Camera → Transparent Background.
-- VRM import/discovery, stage lighting, look-axis fix, and related UI polish.
+- **Bundle OpenSeeFace** in the release (`thirdparty/openseeface/` + `scripts/setup_openseeface.sh`).
+- **Auto-setup on first launch** — creates the Python venv next to the app (requires `python3` / `python3-venv` and network once).
+- OSF process looks beside the executable instead of inside the packed `res://` tree.
+
+## Requirements for tracking
+
+- `python3` and `python3-venv` (Debian/Ubuntu: `sudo apt install python3-venv`)
+- First launch needs internet for `pip install` of numpy/opencv/onnxruntime/Pillow
 
 ## Smoke
 
-- [ ] Rest OK
-- [ ] Start Tracking → head/mouth follow; Stop Tracking kills process
-- [ ] Set Expression clears previous morphs
-- [ ] Set Pose → HandsOnHips looks correct; head tracking still works
-- [ ] Transparent Background toggle works both ways
+- [ ] Fresh extract → first run shows OSF setup toast and creates `thirdparty/openseeface/.venv`
+- [ ] Start Tracking works without manually running the setup script

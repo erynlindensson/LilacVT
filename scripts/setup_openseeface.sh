@@ -42,4 +42,4 @@ echo "OpenSeeFace setup complete."
 echo "  python: $VENV/bin/python"
 echo "  models: $OSF_DIR/models"
 echo
-echo "Select OpenSeeFace (Webcam) in Camera settings to start tracking."
+echo "Select OpenSeeFace (Webcam) in Camera settings, then press Start Tracking."
