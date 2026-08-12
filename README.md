@@ -8,8 +8,9 @@
   <a href="https://github.com/erodozer/open-vt">Upstream OpenVT</a>
 </p>
 
-<img src="https://img.itch.zone/aW1nLzIzOTYyMzE3LnBuZw==/original/RvA2OU.png" />
-<img src="https://img.itch.zone/aW1nLzI0MzgwMzM0LnBuZw==/original/yLLOfx.png" />
+<p align="center">
+  <img src="branding/screenshot-lilac.png" alt="OpenVT Lilac with selectable Lilac UI theme, VRM avatar, and OpenSeeFace tracking" width="900" />
+</p>
 
 ## Credits
 
@@ -20,12 +21,13 @@ Lilac extends that foundation; please star and support upstream when you can.
 ## What is Lilac?
 
 [OpenVT](https://github.com/erodozer/open-vt) is open-source software for 2D VTubing (Live2D-first, Godot 4).
-**OpenVT Lilac** is a community fork focused on making **VRM avatars** more usable alongside Live2D: face tracking, expressions, simple body poses, scene lighting, and a smoother OpenSeeFace setup on Linux.
+**OpenVT Lilac** is a community fork focused on making **VRM avatars** more usable alongside Live2D: face tracking, expressions, simple body poses, scene lighting, pickable UI themes, and a smoother OpenSeeFace setup on Linux.
 
-Latest packaged build: **[v0.1.3](https://github.com/erynlindensson/openvt-lilac/releases/tag/v0.1.3)**.
+Latest packaged build: **[v0.1.4](https://github.com/erynlindensson/openvt-lilac/releases/tag/v0.1.4)**.
 
 ## Lilac highlights (vs upstream OpenVT)
 
+- **Pickable UI themes** — Camera → Application Settings → **UI Theme** switches Lilac (default), Classic, Rose, or Slate live; upstream OpenVT ships a single beige chrome look.
 - **Enhanced VRM support** — model discovery/import into `VrmModels`, viewport lighting, drag/zoom framing, and blueprint defaults for face tracking parameters.
 - **OpenSeeFace integration** — facetracker is **vendored** under `thirdparty/openseeface/` with `scripts/setup_openseeface.sh`; tracking starts only when you press **Start Tracking** (not on mode select).
 - **Expressions for VRM** — Set Expression lists standard VRM blendshapes (moods, visemes, blinks, customs) and applies them exclusively so morphs do not stack.
@@ -81,7 +83,7 @@ Export Linux package (after a release export):
 
 ```bash
 godot4-ayagami --headless --path . --export-release linux bin/linux/openvt.x86_64
-VERSION=0.1.3 ./scripts/package_linux_release.sh
+VERSION=0.1.4 ./scripts/package_linux_release.sh
 ```
 
 ## References
