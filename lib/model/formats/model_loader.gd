@@ -6,6 +6,8 @@ const VtModel = preload("res://lib/model/vt_model.gd")
 
 @abstract func load_data(path: String) -> ModelMeta
 
+@abstract func model_directory() -> String
+
 @abstract func model_format() -> StringName
 
 @abstract func supported_extension() -> String

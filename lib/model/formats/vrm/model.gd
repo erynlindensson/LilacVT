@@ -35,6 +35,8 @@ var vp: SubViewport
 var camera: Camera3D
 
 var blendshapes_meshes = {}
+## Model-local AABB at rest (ignores runtime position/scale/rotation).
+var _rest_aabb: AABB = AABB()
 
 
 func load_data(path: String) -> ModelMeta:
@@ -109,45 +111,26 @@ func _build_model():
 	var anim: AnimationPlayer = model.get_node("AnimationPlayer")
 	_parameters = {
 		# head
-		"headRotX": {
-			"id": "headRotX",
-			"name": "Head Rotation X",
-			"default": 0,
-			"min": -1,
-			"max": 1
-		},
-		"headRotY": {
-			"id": "headRotY",
-			"name": "Head Rotation Y",
-			"default": 0,
-			"min": -0.5,
-			"max": 0.5
-		},
-		"headRotZ": {
-			"id": "headRotZ",
-			"name": "Head Rotation Z",
-			"default": 0,
-			"min": -0.5,
-			"max": 0.5
-		},
+		"headRotX": _make_parameter("headRotX", "Head Rotation X", 0.0, -1.0, 1.0),
+		"headRotY": _make_parameter("headRotY", "Head Rotation Y", 0.0, -0.5, 0.5),
+		"headRotZ": _make_parameter("headRotZ", "Head Rotation Z", 0.0, -0.5, 0.5),
 	}
 	if anim.has_animation("RESET"):
 		var a : Animation = anim.get_animation("RESET")
 		for track_index in range(0, a.get_track_count()):
 			var track_path : NodePath = a.track_get_path(track_index)
-			var track_type = a.track_get_type(track_index)
 			if a.track_get_type(track_index) == Animation.TYPE_BLEND_SHAPE:
 				var blend_shape = track_path.get_subname(0)
 				var meshes = blendshapes_meshes.get(blend_shape, [])
 				meshes.append(track_path)
 				blendshapes_meshes[blend_shape] = meshes
-				_parameters[blend_shape] = {
-					"id": blend_shape,
-					"name": blend_shape,
-					"default": a.track_get_key_value(track_index, 0),
-					"min": 0.0,
-					"max": 1.0
-				}
+				_parameters[blend_shape] = _make_parameter(
+					blend_shape,
+					blend_shape,
+					a.track_get_key_value(track_index, 0),
+					0.0,
+					1.0
+				)
 	vp.add_child(model)
 	
 	(model.get_node("GeneralSkeleton") as Skeleton3D).reset_bone_poses() # force reset bones
@@ -155,42 +138,111 @@ func _build_model():
 	await get_tree().process_frame
 	
 	_meshes = model.find_children("*", "VisualInstance3D")
+	_rest_aabb = _compute_local_aabb()
 	
-	get_parent().transform_updated.connect(
-		func (position, scale, rotation, offset, ypr):
-			model.position = camera.project_position(
-				position, 3.0
-			) - Vector3(0, get_size_3d().size.y * scale.x / 2, 0)
-			model.scale = Vector3.ONE * scale.x
-			model.rotation = ypr
+	# Keep a stable 3D render resolution; SubViewportContainer.stretch can otherwise
+	# shrink the RT to a tiny control size and break projection/hit-testing.
+	vp.size = Vector2i(1280, 720)
+	
+	# Draggable hit box (defaults to 1x1 which makes VRM undraggable).
+	# Size relative to the stage canvas — silhouette-perfect bounds aren't required.
+	var stage_size := get_viewport_rect().size
+	if stage_size.x < 2.0 or stage_size.y < 2.0:
+		stage_size = Vector2(1280, 720)
+	size = Vector2(
+		maxf(stage_size.x * 0.35, 280.0),
+		maxf(stage_size.y * 0.7, 480.0)
 	)
+	centered = true
 	
-	#camera.look_at(model.position)
+	# Drive the 3D model from this Node2D's drag/zoom/orbit controls.
+	if not transform_updated.is_connected(_on_transform_updated):
+		transform_updated.connect(_on_transform_updated)
+	set_notify_transform(true)
+	_sync_stage_to_model()
+	
 	return true
-	
-func get_size_3d() -> AABB:
-	var aabb: AABB = AABB()
-	for c in model.get_node("%GeneralSkeleton").get_children():
-		if c is VisualInstance3D:
-			aabb = aabb.merge(c.get_aabb())
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_TRANSFORM_CHANGED and is_initialized():
+		_sync_stage_to_model()
+
+func _on_transform_updated(
+	stage_position: Vector2,
+	stage_scale: Vector2,
+	_stage_rotation_deg: float,
+	_offset: Vector2,
+	ypr: Vector3
+) -> void:
+	_apply_stage_transform(stage_position, stage_scale, ypr)
+
+func _sync_stage_to_model() -> void:
+	_apply_stage_transform(global_position, scale, free_rotation)
+
+func _apply_stage_transform(stage_position: Vector2, stage_scale: Vector2, ypr: Vector3) -> void:
+	if model == null or camera == null:
+		return
+	# Stage parks new models at Vector2.INF until spawn finishes.
+	if not stage_position.is_finite() or not stage_scale.is_finite():
+		return
+	# Camera lives in the VRM SubViewport; map from stage canvas coords into that space.
+	var stage_vp := get_viewport()
+	var src_size: Vector2 = stage_vp.get_visible_rect().size if stage_vp else Vector2(vp.size)
+	var dst_size := Vector2(vp.size)
+	var mapped := Vector2(
+		stage_position.x / maxf(src_size.x, 1.0) * dst_size.x,
+		stage_position.y / maxf(src_size.y, 1.0) * dst_size.y
+	)
+	if not mapped.is_finite():
+		return
+	var depth := camera.position.z
+	var s := maxf(stage_scale.x, 0.01)
+	var local_center := _rest_aabb.get_center()
+	var projected: Vector3 = camera.project_position(mapped, depth)
+	if not projected.is_finite():
+		return
+	# Anchor the visual center on the projected stage point.
+	model.scale = Vector3.ONE * s
+	model.rotation = ypr
+	model.position = projected - local_center * s
+
+func _compute_local_aabb() -> AABB:
+	var aabb := AABB()
+	var first := true
+	if model == null:
+		return aabb
+	# Prefer mesh instances anywhere under the VRM root (not only skeleton children).
+	for c in model.find_children("*", "VisualInstance3D", true, false):
+		if not (c is VisualInstance3D):
+			continue
+		var mesh_aabb: AABB = (c as VisualInstance3D).get_aabb()
+		if mesh_aabb.size.length() <= 0.0:
+			continue
+		# Convert mesh-local AABB into model-local space.
+		var model_space: AABB = (model.global_transform.affine_inverse() * (c as Node3D).global_transform) * mesh_aabb
+		if first:
+			aabb = model_space
+			first = false
+		else:
+			aabb = aabb.merge(model_space)
 	return aabb
-	
+
+func get_size_3d() -> AABB:
+	if model != null and _rest_aabb.size.length() > 0.0:
+		return AABB(_rest_aabb.position * model.scale.x + model.position, _rest_aabb.size * model.scale.x)
+	return _compute_local_aabb()
+
 func get_size() -> Vector2:
-	var aabb = get_size_3d()
-	
-	var bl = camera.unproject_position(
-		aabb.position
+	if size.x > 1.0 and size.y > 1.0:
+		return size
+	var stage_size := get_viewport_rect().size
+	if stage_size.x < 2.0 or stage_size.y < 2.0:
+		stage_size = Vector2(1280, 720)
+	return Vector2(
+		maxf(stage_size.x * 0.35, 280.0),
+		maxf(stage_size.y * 0.7, 480.0)
 	)
-	var tr = camera.unproject_position(
-		aabb.position + aabb.size
-	)
-			
-	var rect = Rect2i(
-		bl.x, tr.y, tr.x - bl.x, bl.y - tr.y
-	)
-			
-	return rect.size
-	
+
 func get_origin() -> Vector2:
 	return vp.size / 2.0
 
@@ -201,11 +253,24 @@ func get_meshes() -> Array:
 var _parameters: Dictionary[String, Dictionary] = {}
 func get_parameters() -> Dictionary[String, Dictionary]:
 	return _parameters
+
+func _make_parameter(id: String, display_name: String, default_value: float, min_value: float, max_value: float) -> Dictionary:
+	return {
+		"id": id,
+		"name": display_name,
+		"default": default_value,
+		"min": min_value,
+		"max": max_value,
+		# Live2D / blueprint UI contract
+		"range": Vector2(min_value, max_value),
+	}
 	
 func tracking_updated(tracking_data: Dictionary, delta: float):
 	pass
 	
 func apply_parameters(values: Dictionary[String, float]):
+	if model == null or not model.is_inside_tree():
+		return
 	# transform parameters into VRM blendshapes
 	for blend_shape in values.keys():
 		var blend_meshes = blendshapes_meshes.get(blend_shape, [])

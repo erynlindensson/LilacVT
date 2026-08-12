@@ -40,3 +40,28 @@ static func write_json(filepath: String, data: Dictionary) -> Error:
 	f.close()
 	
 	return OK
+
+## Recursively copy a file or directory. Paths may be `user://` or absolute.
+static func copy_recursive(from: String, to: String) -> Error:
+	var src := ProjectSettings.globalize_path(from)
+	var dst := ProjectSettings.globalize_path(to)
+	if not FileAccess.file_exists(src) and not DirAccess.dir_exists_absolute(src):
+		return ERR_FILE_NOT_FOUND
+	if DirAccess.dir_exists_absolute(src):
+		var err := DirAccess.make_dir_recursive_absolute(dst)
+		if err != OK and not DirAccess.dir_exists_absolute(dst):
+			return err
+		for file_name in DirAccess.get_files_at(src):
+			err = DirAccess.copy_absolute(src.path_join(file_name), dst.path_join(file_name))
+			if err != OK:
+				return err
+		for dir_name in DirAccess.get_directories_at(src):
+			err = copy_recursive(src.path_join(dir_name), dst.path_join(dir_name))
+			if err != OK:
+				return err
+		return OK
+	var parent := dst.get_base_dir()
+	var err := DirAccess.make_dir_recursive_absolute(parent)
+	if err != OK and not DirAccess.dir_exists_absolute(parent):
+		return err
+	return DirAccess.copy_absolute(src, dst)

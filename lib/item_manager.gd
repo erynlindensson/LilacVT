@@ -49,9 +49,14 @@ func refresh_assets():
 			png_items.append(fp)
 			
 	# also include the ability to spawn any model as an item
-	for i in DirAccess.get_directories_at(ModelManager.model_directory):
-		var fp = ModelManager.model_directory.path_join(i)
-		model_items.append(fp)
+	for fmt in ModelManager.formats.values():
+		var model_dir: String = fmt.model_directory()
+		if not DirAccess.dir_exists_absolute(ProjectSettings.globalize_path(model_dir)):
+			continue
+		for i in DirAccess.get_directories_at(model_dir):
+			var fp = model_dir.path_join(i)
+			if fp not in model_items:
+				model_items.append(fp)
 		
 	item_cache = png_items + apng_items + model_items
 	

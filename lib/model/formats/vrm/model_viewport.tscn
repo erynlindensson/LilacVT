@@ -3,6 +3,9 @@
 [sub_resource type="Environment" id="Environment_ghfw6"]
 background_mode = 1
 background_color = Color(0, 0, 0, 0)
+ambient_light_source = 2
+ambient_light_color = Color(0.62, 0.64, 0.7, 1)
+ambient_light_energy = 0.9
 
 [node name="Node" type="Node" unique_id=554358072]
 
@@ -12,10 +15,12 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
 stretch = true
 
 [node name="SubViewport" type="SubViewport" parent="ModelViewport" unique_id=358267758]
 unique_name_in_owner = true
+own_world_3d = true
 transparent_bg = true
 handle_input_locally = false
 size = Vector2i(1280, 720)
@@ -23,7 +28,19 @@ render_target_update_mode = 4
 
 [node name="Camera3D" type="Camera3D" parent="ModelViewport/SubViewport" unique_id=1536418873]
 unique_name_in_owner = true
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 3)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.2, 3)
 environment = SubResource("Environment_ghfw6")
 current = true
 fov = 37.849285
+
+[node name="KeyLight" type="DirectionalLight3D" parent="ModelViewport/SubViewport" unique_id=1536418874]
+transform = Transform3D(0.813798, -0.409576, 0.412264, 0, 0.709407, 0.704799, -0.58115, -0.573564, 0.577316, 0, 2.5, 0)
+light_color = Color(1, 0.956863, 0.839216, 1)
+light_energy = 1.15
+shadow_enabled = false
+
+[node name="FillLight" type="DirectionalLight3D" parent="ModelViewport/SubViewport" unique_id=1536418875]
+transform = Transform3D(0.707107, 0.353553, -0.612372, 0, 0.866025, 0.5, 0.707107, -0.353553, 0.612372, 0, 1.5, 0)
+light_color = Color(0.75, 0.82, 1, 1)
+light_energy = 0.45
+shadow_enabled = false
