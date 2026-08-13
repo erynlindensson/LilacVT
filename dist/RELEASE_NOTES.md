@@ -1,7 +1,7 @@
 # OpenVT Lilac v0.1.5 — Linux x86_64
 
 - Artifact: `open-vt-0.1.5-linux-x86_64.tar.gz`
-- SHA256: _(filled after package)_
+- SHA256: `dd57d2adfa04be53d1b96b285ed9342ae29007173a27b07194b35eefe1ea03a4`
 
 ## Changes
 
