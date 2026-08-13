@@ -4,7 +4,7 @@
 background_mode = 1
 background_color = Color(0, 0, 0, 0)
 ambient_light_source = 2
-ambient_light_color = Color(0.62, 0.64, 0.7, 1)
+ambient_light_color = Color(1, 1, 1, 1)
 ambient_light_energy = 0.9
 
 [node name="Node" type="Node" unique_id=554358072]
@@ -35,7 +35,7 @@ fov = 37.849285
 
 [node name="KeyLight" type="DirectionalLight3D" parent="ModelViewport/SubViewport" unique_id=1536418874]
 transform = Transform3D(0.813798, -0.409576, 0.412264, 0, 0.709407, 0.704799, -0.58115, -0.573564, 0.577316, 0, 2.5, 0)
-light_color = Color(1, 0.956863, 0.839216, 1)
+light_color = Color(1, 1, 1, 1)
 light_energy = 1.15
 shadow_enabled = false
 

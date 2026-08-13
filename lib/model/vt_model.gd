@@ -7,6 +7,7 @@ const ExpressionController = preload("./parameters/expression_value_provider.gd"
 const Tracker = preload("res://lib/tracking/tracker.gd")
 const ModelMeta = preload("./metadata.gd")
 const Serializers = preload("res://lib/utils/serializers.gd")
+const TransparentAa = preload("res://lib/rendering/transparent_aa.gd")
 
 var modelmeta: ModelMeta
 @onready var mixer = %Mixer
@@ -41,6 +42,10 @@ var rest_anchors: Dictionary = {}
 # movement transforms
 var movement_enabled: bool = false
 var movement_scale: Vector3 = Vector3.ZERO
+
+var render_msaa: Viewport.MSAA = Viewport.MSAA.MSAA_4X
+var render_anisotropic: Viewport.AnisotropicFiltering = Viewport.AnisotropicFiltering.ANISOTROPY_4X
+var render_transparent_aa: bool = false
 
 signal initialized
 signal loaded
@@ -90,18 +95,30 @@ func load_model_settings(settings: Dictionary):
 		clampf(get_viewport_rect().size.y / size.y, 0.001, 2.0)
 	)
 	self.rotation_degrees = settings.get("transform", {}).get("rotation", 0)
-	self.texture_filter = TEXTURE_FILTER_NEAREST_WITH_MIPMAPS_ANISOTROPIC if settings.get("quality", {}).get("filter", "linear") == "nearest" else TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
-	self.smoothing = settings.get("quality", {}).get("smoothing", false)
+	var quality: Dictionary = settings.get("quality", {})
+	render_msaa = msaa_from_string(quality.get("msaa", "4x"))
+	render_anisotropic = anisotropic_from_string(quality.get("anisotropic", "4x"))
+	texture_filter = texture_filter_for_quality(
+		quality.get("filter", "linear") == "nearest",
+		render_anisotropic != Viewport.AnisotropicFiltering.ANISOTROPY_DISABLED
+	)
+	self.smoothing = quality.get("smoothing", false)
+	render_transparent_aa = quality.get("transparent_aa", false)
 		
 	self.position = Serializers.Vec2Serializer.from_json(
 		settings.get("transform", {}).get("position", {}),
 		get_viewport_rect().get_center()
 	)
-	
+	apply_render_quality()
+		
 func save_model_settings(settings: Dictionary):
 	settings.merge({
 		"quality": {
-			"filter": "nearest" if self.texture_filter != TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC else "linear",
+			"filter": "nearest" if is_nearest_texture_filter(texture_filter) else "linear",
+			"smoothing": smoothing,
+			"msaa": msaa_to_string(render_msaa),
+			"anisotropic": anisotropic_to_string(render_anisotropic),
+			"transparent_aa": render_transparent_aa,
 		},
 		"transform": {
 			"position": Serializers.Vec2Serializer.to_json(self.position),
@@ -115,6 +132,89 @@ func save_model_settings(settings: Dictionary):
 			{}
 		)
 	})
+
+static func msaa_from_string(value: String) -> Viewport.MSAA:
+	match value.to_lower():
+		"off", "disabled", "0":
+			return Viewport.MSAA.MSAA_DISABLED
+		"2x":
+			return Viewport.MSAA.MSAA_2X
+		_:
+			return Viewport.MSAA.MSAA_4X
+
+static func msaa_to_string(value: Viewport.MSAA) -> String:
+	match value:
+		Viewport.MSAA.MSAA_DISABLED:
+			return "off"
+		Viewport.MSAA.MSAA_2X:
+			return "2x"
+		_:
+			return "4x"
+
+static func anisotropic_from_string(value: String) -> Viewport.AnisotropicFiltering:
+	match value.to_lower():
+		"disabled", "off", "0":
+			return Viewport.AnisotropicFiltering.ANISOTROPY_DISABLED
+		"2x":
+			return Viewport.AnisotropicFiltering.ANISOTROPY_2X
+		"8x":
+			return Viewport.AnisotropicFiltering.ANISOTROPY_8X
+		"16x":
+			return Viewport.AnisotropicFiltering.ANISOTROPY_16X
+		_:
+			return Viewport.AnisotropicFiltering.ANISOTROPY_4X
+
+static func anisotropic_to_string(value: Viewport.AnisotropicFiltering) -> String:
+	match value:
+		Viewport.AnisotropicFiltering.ANISOTROPY_DISABLED:
+			return "disabled"
+		Viewport.AnisotropicFiltering.ANISOTROPY_2X:
+			return "2x"
+		Viewport.AnisotropicFiltering.ANISOTROPY_8X:
+			return "8x"
+		Viewport.AnisotropicFiltering.ANISOTROPY_16X:
+			return "16x"
+		_:
+			return "4x"
+
+static func is_nearest_texture_filter(filter: CanvasItem.TextureFilter) -> bool:
+	return filter == CanvasItem.TEXTURE_FILTER_NEAREST \
+		or filter == CanvasItem.TEXTURE_FILTER_NEAREST_WITH_MIPMAPS \
+		or filter == CanvasItem.TEXTURE_FILTER_NEAREST_WITH_MIPMAPS_ANISOTROPIC
+
+static func texture_filter_for_quality(nearest: bool, anisotropic: bool) -> CanvasItem.TextureFilter:
+	if nearest:
+		return CanvasItem.TEXTURE_FILTER_NEAREST_WITH_MIPMAPS_ANISOTROPIC if anisotropic \
+			else CanvasItem.TEXTURE_FILTER_NEAREST_WITH_MIPMAPS
+	return CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC if anisotropic \
+		else CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+
+func apply_render_quality() -> void:
+	var stage_node := get_tree().get_first_node_in_group("system:stage")
+	if stage_node != null and stage_node.has_method("apply_viewport_quality"):
+		stage_node.apply_viewport_quality(render_msaa, render_anisotropic)
+	_apply_model_viewport_quality()
+	apply_transparent_aa()
+
+func apply_transparent_aa() -> void:
+	_apply_transparent_aa_impl()
+
+func _transparent_window_for_compositing() -> bool:
+	var stage_node := get_tree().get_first_node_in_group("system:stage")
+	if stage_node != null and stage_node.has_method("is_transparent_window"):
+		return stage_node.is_transparent_window()
+	return false
+
+## Alpha-to-coverage resolves against MSAA samples, so it is a no-op without multisampling.
+## Supersampling and premultiplied compositing do not depend on it.
+func alpha_to_coverage_enabled() -> bool:
+	return render_transparent_aa and TransparentAa.supports_alpha_to_coverage(render_msaa)
+
+func _apply_model_viewport_quality() -> void:
+	pass
+
+func _apply_transparent_aa_impl() -> void:
+	pass
 
 ## load open-vt specific settings
 func _load_settings():

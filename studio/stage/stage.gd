@@ -14,8 +14,11 @@ var active_model: VtModel
 var _last_viewport_size := Vector2.ZERO
 
 ## Global VRM stage lighting (applied when the active model supports it).
-var lighting_color: Color = Color(1.0, 0.956863, 0.839216, 1.0)
-var lighting_intensity: float = 1.0
+const DEFAULT_LIGHTING_COLOR := Color.WHITE
+const DEFAULT_LIGHTING_INTENSITY := 0.5
+
+var lighting_color: Color = DEFAULT_LIGHTING_COLOR
+var lighting_intensity: float = DEFAULT_LIGHTING_INTENSITY
 
 signal model_changed(model: VtModel)
 signal item_added(item: VtItem)
@@ -29,12 +32,17 @@ var objects: Array :
 func toggle_ndi(enabled: bool) -> void:
 	%NDIOutput.enable_video_output = enabled
 
+func is_transparent_window() -> bool:
+	return not %Bg.visible
+
 func toggle_bg(enabled: bool) -> void:
 	get_tree().root.transparent_bg = enabled
 	get_window().transparent = enabled
 	get_window().transparent_bg = enabled
 	%Bg.visible = not enabled
-	
+	if active_model != null:
+		active_model.apply_transparent_aa()
+
 func spawn_model(model: VtModel):
 	if model == null:
 		push_warning("invalid model attempted to load")
@@ -99,6 +107,11 @@ func set_lighting(color: Color, intensity: float) -> void:
 func apply_lighting() -> void:
 	if active_model != null and active_model.has_method("set_stage_lighting"):
 		active_model.set_stage_lighting(lighting_color, lighting_intensity)
+
+func apply_viewport_quality(msaa: Viewport.MSAA, anisotropic: Viewport.AnisotropicFiltering) -> void:
+	capture_viewport.msaa_2d = msaa
+	capture_viewport.msaa_3d = msaa
+	capture_viewport.anisotropic_filtering_level = anisotropic
 
 func spawn_item(item: VtItem, animate = true, reposition = true):
 	# do not allow spawning items if there is no active model

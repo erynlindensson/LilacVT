@@ -25,13 +25,18 @@ func _sync_lighting_controls() -> void:
 	%LightingIntensity.set_block_signals(true)
 	%LightingColor.color = stage.lighting_color
 	%LightingIntensity.value = stage.lighting_intensity
+	_update_intensity_label(stage.lighting_intensity)
 	%LightingColor.set_block_signals(false)
 	%LightingIntensity.set_block_signals(false)
+
+func _update_intensity_label(value: float) -> void:
+	%IntensityValue.text = "%d%%" % int(round(value * 100.0))
 
 func _on_lighting_color_changed(color: Color) -> void:
 	stage.set_lighting(color, stage.lighting_intensity)
 
 func _on_lighting_intensity_changed(value: float) -> void:
+	_update_intensity_label(value)
 	stage.set_lighting(stage.lighting_color, value)
 
 func _on_directory_button_pressed() -> void:

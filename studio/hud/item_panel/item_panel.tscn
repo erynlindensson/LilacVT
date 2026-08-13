@@ -107,14 +107,25 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(64, 32)
 layout_mode = 2
 edit_alpha = false
-color = Color(1, 0.956863, 0.839216, 1)
+color = Color(1, 1, 1, 1)
 
 [node name="IntensityRow" type="VBoxContainer" parent="VBoxContainer/ScrollContainer/VBoxContainer2/Lighting/VBoxContainer" unique_id=1683819261]
 layout_mode = 2
 
-[node name="IntensityLabel" type="Label" parent="VBoxContainer/ScrollContainer/VBoxContainer2/Lighting/VBoxContainer/IntensityRow" unique_id=1683819262]
+[node name="IntensityHeader" type="HBoxContainer" parent="VBoxContainer/ScrollContainer/VBoxContainer2/Lighting/VBoxContainer/IntensityRow" unique_id=1683819264]
 layout_mode = 2
+
+[node name="IntensityLabel" type="Label" parent="VBoxContainer/ScrollContainer/VBoxContainer2/Lighting/VBoxContainer/IntensityRow/IntensityHeader" unique_id=1683819262]
+layout_mode = 2
+size_flags_horizontal = 3
+tooltip_text = "50% is the default lighting level."
 text = "Lighting Intensity"
+
+[node name="IntensityValue" type="Label" parent="VBoxContainer/ScrollContainer/VBoxContainer2/Lighting/VBoxContainer/IntensityRow/IntensityHeader" unique_id=1683819265]
+unique_name_in_owner = true
+layout_mode = 2
+text = "50%"
+horizontal_alignment = 2
 
 [node name="LightingIntensity" type="HSlider" parent="VBoxContainer/ScrollContainer/VBoxContainer2/Lighting/VBoxContainer/IntensityRow" unique_id=1683819263]
 unique_name_in_owner = true
@@ -122,7 +133,7 @@ layout_mode = 2
 min_value = 0.0
 max_value = 3.0
 step = 0.05
-value = 1.0
+value = 0.5
 
 [node name="StageItems" type="VBoxContainer" parent="VBoxContainer/ScrollContainer/VBoxContainer2" unique_id=766169634]
 unique_name_in_owner = true

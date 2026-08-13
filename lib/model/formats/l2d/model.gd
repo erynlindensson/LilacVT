@@ -112,11 +112,33 @@ func _set(property: StringName, value: Variant) -> bool:
 	return false
 		
 func _adjust_filter():
-	if texture_filter == CanvasItem.TEXTURE_FILTER_NEAREST_WITH_MIPMAPS_ANISOTROPIC and smoothing:
+	var nearest := texture_filter == CanvasItem.TEXTURE_FILTER_NEAREST \
+		or texture_filter == CanvasItem.TEXTURE_FILTER_NEAREST_WITH_MIPMAPS \
+		or texture_filter == CanvasItem.TEXTURE_FILTER_NEAREST_WITH_MIPMAPS_ANISOTROPIC
+	if nearest and smoothing:
 		container.model = model
 	else:
 		model.reparent(self, false)
 		container.model = null
+
+func _apply_model_viewport_quality() -> void:
+	if container == null:
+		return
+	var model_vp := container.get_node_or_null("SubViewport") as SubViewport
+	if model_vp != null:
+		model_vp.msaa_2d = render_msaa
+		model_vp.anisotropic_filtering_level = render_anisotropic
+
+func _apply_transparent_aa_impl() -> void:
+	if container == null:
+		return
+	TransparentAa.apply_viewport_container(
+		container as SubViewportContainer,
+		render_transparent_aa,
+		_transparent_window_for_compositing(),
+	)
+	if model != null:
+		TransparentAa.apply_materials(model, alpha_to_coverage_enabled())
 		
 func _get_property_list() -> Array[Dictionary]:
 	var properties: Array[Dictionary] = []

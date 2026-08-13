@@ -104,6 +104,25 @@ func _ready() -> void:
 	camera = container.get_node("%Camera3D")
 	add_child(container)
 
+func _apply_model_viewport_quality() -> void:
+	if vp != null:
+		vp.msaa_3d = render_msaa
+		vp.anisotropic_filtering_level = render_anisotropic
+
+func _apply_transparent_aa_impl() -> void:
+	if container == null:
+		return
+	var viewport_container := container.get_node_or_null("ModelViewport") as SubViewportContainer
+	if viewport_container != null:
+		TransparentAa.apply_viewport_container(
+			viewport_container,
+			render_transparent_aa,
+			_transparent_window_for_compositing(),
+		)
+	TransparentAa.apply_subviewport(vp, render_transparent_aa)
+	if model != null:
+		TransparentAa.apply_materials(model, alpha_to_coverage_enabled())
+
 func is_initialized():
 	return model != null
 	
@@ -587,7 +606,7 @@ func set_stage_lighting(color: Color, intensity: float) -> void:
 		key.light_color = color
 		key.light_energy = _BASE_KEY_ENERGY * energy
 	if fill:
-		fill.light_color = color.lerp(Color(0.75, 0.82, 1.0), 0.35)
+		fill.light_color = color
 		fill.light_energy = _BASE_FILL_ENERGY * energy
 	if camera != null and camera.environment != null:
 		camera.environment.ambient_light_color = color
@@ -621,6 +640,8 @@ func apply_modifier(part: Node, modifier: Dictionary):
 		else:
 			for i in range(count):
 				m.set_surface_override_material(i, null)
+		# Rebuilding overrides drops whatever transparent AA wrote into them.
+		apply_transparent_aa()
 	
 	part.set_meta("modifiers", modifiers)
 	

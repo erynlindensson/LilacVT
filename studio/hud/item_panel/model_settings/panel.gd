@@ -108,11 +108,7 @@ func _ready():
 				%IdleAnimation.selected = %IdleAnimation.item_count - 1
 	%IdleAnimation.disabled = not lib or lib.get_animation_list_size() == 0
 		
-	%TextureFilter.select(1 if model.texture_filter == CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC else 0)
-	#%SmoothScaling.set_pressed_no_signal(model.smoothing)
-	#%GenerateMipmaps.set_pressed_no_signal(model.mipmaps)
-	#%SmoothScaling.disabled = model.filter == TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-	#%GenerateMipmaps.disabled = model.filter != TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+	_sync_quality_controls()
 	
 	%Movement/XValue.set_value_no_signal(model.movement_scale.x)
 	%Movement/YValue.set_value_no_signal(model.movement_scale.y)
@@ -120,6 +116,78 @@ func _ready():
 	
 	model.request_delete.connect(close_requested.emit)
 	
+func _sync_quality_controls() -> void:
+	%TextureFilter.select(0 if VtModel.is_nearest_texture_filter(model.texture_filter) else 1)
+	%Antialiasing.select(_msaa_option_index(model.render_msaa))
+	%AnisotropicFilter.select(_anisotropic_option_index(model.render_anisotropic))
+	%TransparentAa.set_pressed_no_signal(model.render_transparent_aa)
+	_update_transparent_aa_state()
+	_update_smooth_scaling_state()
+
+## Alpha-to-coverage resolves against MSAA samples, so the toggle needs antialiasing on.
+func _update_transparent_aa_state() -> void:
+	var has_msaa := model.render_msaa != Viewport.MSAA.MSAA_DISABLED
+	%TransparentAa.disabled = not has_msaa
+	%TransparentAa.tooltip_text = (
+		"Supersamples the model at 2x and smooths cutout hair/outline edges, keeping the "
+		+ "background fully transparent. WARNING: GPU-intensive!"
+		if has_msaa
+		else "Requires Antialiasing (MSAA) to be enabled."
+	)
+
+func _msaa_option_index(value: Viewport.MSAA) -> int:
+	match value:
+		Viewport.MSAA.MSAA_DISABLED:
+			return 0
+		Viewport.MSAA.MSAA_2X:
+			return 1
+		_:
+			return 2
+
+func _msaa_from_option_index(index: int) -> Viewport.MSAA:
+	match index:
+		0:
+			return Viewport.MSAA.MSAA_DISABLED
+		1:
+			return Viewport.MSAA.MSAA_2X
+		_:
+			return Viewport.MSAA.MSAA_4X
+
+func _anisotropic_option_index(value: Viewport.AnisotropicFiltering) -> int:
+	match value:
+		Viewport.AnisotropicFiltering.ANISOTROPY_DISABLED:
+			return 0
+		Viewport.AnisotropicFiltering.ANISOTROPY_2X:
+			return 1
+		Viewport.AnisotropicFiltering.ANISOTROPY_8X:
+			return 3
+		Viewport.AnisotropicFiltering.ANISOTROPY_16X:
+			return 4
+		_:
+			return 2
+
+func _anisotropic_from_option_index(index: int) -> Viewport.AnisotropicFiltering:
+	match index:
+		0:
+			return Viewport.AnisotropicFiltering.ANISOTROPY_DISABLED
+		1:
+			return Viewport.AnisotropicFiltering.ANISOTROPY_2X
+		3:
+			return Viewport.AnisotropicFiltering.ANISOTROPY_8X
+		4:
+			return Viewport.AnisotropicFiltering.ANISOTROPY_16X
+		_:
+			return Viewport.AnisotropicFiltering.ANISOTROPY_4X
+
+func _apply_texture_filter() -> void:
+	var nearest: bool = %TextureFilter.selected == 0
+	var anisotropic := model.render_anisotropic != Viewport.AnisotropicFiltering.ANISOTROPY_DISABLED
+	model.texture_filter = VtModel.texture_filter_for_quality(nearest, anisotropic)
+	_update_smooth_scaling_state()
+
+func _update_smooth_scaling_state() -> void:
+	%SmoothScaling.disabled = not VtModel.is_nearest_texture_filter(model.texture_filter)
+
 func _move_model(_value):
 	if not model:
 		return
@@ -132,14 +200,22 @@ func _move_model(_value):
 	)
 	_pause_signals = false
 	
-func _on_texture_filter_item_selected(index: int) -> void:
-	match index:
-		0:
-			model.texture_filter = CanvasItem.TextureFilter.TEXTURE_FILTER_NEAREST_WITH_MIPMAPS_ANISOTROPIC
-			%SmoothScaling.disabled = false
-		_:
-			model.texture_filter = CanvasItem.TextureFilter.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS_ANISOTROPIC
-			%SmoothScaling.disabled = true
+func _on_texture_filter_item_selected(_index: int) -> void:
+	_apply_texture_filter()
+
+func _on_antialiasing_item_selected(index: int) -> void:
+	model.render_msaa = _msaa_from_option_index(index)
+	model.apply_render_quality()
+	_update_transparent_aa_state()
+
+func _on_anisotropic_filter_item_selected(index: int) -> void:
+	model.render_anisotropic = _anisotropic_from_option_index(index)
+	_apply_texture_filter()
+	model.apply_render_quality()
+
+func _on_transparent_aa_toggled(toggled_on: bool) -> void:
+	model.render_transparent_aa = toggled_on
+	model.apply_transparent_aa()
 
 func _on_smooth_scaling_toggled(toggled_on: bool) -> void:
 	model.smoothing = toggled_on
