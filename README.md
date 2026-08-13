@@ -34,7 +34,6 @@ Latest packaged build: **[v0.1.5](https://github.com/erynlindensson/open-vt-lila
 - **Easy Poses** — Set Pose next to Expressions with built-in body presets (Neutral, Wave, HandsOnHips, ArmsCrossed, Thinking, Point) that keep head tracking free.
 - **Scene lighting controls** — Items panel **Lighting** group: HSV color wheel + intensity (default white at 50%) for VRM key/fill/ambient lights.
 - **VRM render quality** — Model Settings: Antialiasing (Off / 2× / 4× MSAA), Anisotropic Filtering, and optional **Transparent Anti-Aliasing** (2× supersample on the avatar only). Smooths cutout hair without turning the stage background black. GPU-intensive; off by default. Upstream OpenVT only exposes texture filter + smooth scaling.
-- **Opaque background by default** — toggle **Transparent Background** under Camera → Application Settings when you need OBS alpha capture.
 - **Live2D fixes carried forward** — idle/mask white-out isolation and related tracking polish from the Lilac line of work.
 
 Upstream strengths (Linux-native, open source, VTS-oriented assets, pixel filtering, popout controls) still apply.
