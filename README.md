@@ -3,7 +3,7 @@
 </p>
 <p align="center"><strong>OpenVT Lilac</strong> — a fork of OpenVT with enhanced VRM support</p>
 <p align="center">
-  <a href="https://github.com/erynlindensson/openvt-lilac/releases">Releases</a>
+  <a href="https://github.com/erynlindensson/open-vt-lilac/releases">Releases</a>
   ·
   <a href="https://github.com/erodozer/open-vt">Upstream OpenVT</a>
 </p>
@@ -21,9 +21,9 @@ Lilac extends that foundation; please star and support upstream when you can.
 ## What is Lilac?
 
 [OpenVT](https://github.com/erodozer/open-vt) is open-source software for 2D VTubing (Live2D-first, Godot 4).
-**OpenVT Lilac** is a community fork focused on making **VRM avatars** more usable alongside Live2D: face tracking, expressions, simple body poses, scene lighting, pickable UI themes, and a smoother OpenSeeFace setup on Linux.
+**OpenVT Lilac** is a community fork focused on making **VRM avatars** more usable alongside Live2D: face tracking, expressions, simple body poses, scene lighting, per-model render quality, pickable UI themes, and a smoother OpenSeeFace setup on Linux.
 
-Latest packaged build: **[v0.1.5](https://github.com/erynlindensson/openvt-lilac/releases/tag/v0.1.5)**.
+Latest packaged build: **[v0.1.5](https://github.com/erynlindensson/open-vt-lilac/releases/tag/v0.1.5)**.
 
 ## Lilac highlights (vs upstream OpenVT)
 
@@ -32,7 +32,8 @@ Latest packaged build: **[v0.1.5](https://github.com/erynlindensson/openvt-lilac
 - **OpenSeeFace integration** — facetracker is **vendored** under `thirdparty/openseeface/` with `scripts/setup_openseeface.sh`; tracking starts only when you press **Start Tracking** (not on mode select).
 - **Expressions for VRM** — Set Expression lists standard VRM blendshapes (moods, visemes, blinks, customs) and applies them exclusively so morphs do not stack.
 - **Easy Poses** — Set Pose next to Expressions with built-in body presets (Neutral, Wave, HandsOnHips, ArmsCrossed, Thinking, Point) that keep head tracking free.
-- **Scene lighting controls** — Items panel **Lighting** group: HSV color wheel + intensity for VRM key/fill/ambient lights.
+- **Scene lighting controls** — Items panel **Lighting** group: HSV color wheel + intensity (default white at 50%) for VRM key/fill/ambient lights.
+- **VRM render quality** — Model Settings: Antialiasing (Off / 2× / 4× MSAA), Anisotropic Filtering, and optional **Transparent Anti-Aliasing** (2× supersample on the avatar only). Smooths cutout hair without turning the stage background black. GPU-intensive; off by default. Upstream OpenVT only exposes texture filter + smooth scaling.
 - **Opaque background by default** — toggle **Transparent Background** under Camera → Application Settings when you need OBS alpha capture.
 - **Live2D fixes carried forward** — idle/mask white-out isolation and related tracking polish from the Lilac line of work.
 
