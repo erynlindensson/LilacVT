@@ -1,0 +1,74 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://studio/hud/model_panel/live2d_browser/live2d_browser.gd" id="1_browser"]
+[ext_resource type="PackedScene" path="res://ui/search/search.tscn" id="2_search"]
+
+[node name="Live2dBrowser" type="Window"]
+oversampling_override = 1.0
+title = "Free Live2D Models"
+initial_position = 2
+size = Vector2i(560, 640)
+transient = true
+exclusive = true
+script = ExtResource("1_browser")
+
+[node name="FetcherHost" type="Node" parent="."]
+
+[node name="PanelContainer" type="PanelContainer" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="PanelContainer"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Search" parent="PanelContainer/VBoxContainer" instance=ExtResource("2_search")]
+unique_name_in_owner = true
+layout_mode = 2
+list = NodePath("../ScrollContainer/ModelList")
+
+[node name="ScrollContainer" type="ScrollContainer" parent="PanelContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+vertical_scroll_mode = 2
+
+[node name="ModelList" type="VBoxContainer" parent="PanelContainer/VBoxContainer/ScrollContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 8
+
+[node name="Status" type="Label" parent="PanelContainer/VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 2
+text = "Loading catalog…"
+
+[node name="LicenseDialog" type="ConfirmationDialog" parent="."]
+unique_name_in_owner = true
+title = "Live2D Sample License"
+size = Vector2i(480, 320)
+ok_button_text = "Accept and Download"
+dialog_text = "Official Live2D sample models are free for learning and testing under Live2D’s Free Material License and Sample Data Terms of Use. You must agree before downloading."
+
+[node name="LicenseBody" type="VBoxContainer" parent="LicenseDialog"]
+theme_override_constants/separation = 8
+
+[node name="LicenseLink" type="LinkButton" parent="LicenseDialog/LicenseBody"]
+text = "Free Material License Agreement"
+
+[node name="TermsLink" type="LinkButton" parent="LicenseDialog/LicenseBody"]
+text = "Cubism Sample Data Terms of Use"
+
+[node name="LicenseAgree" type="CheckBox" parent="LicenseDialog/LicenseBody"]
+unique_name_in_owner = true
+text = "I agree to the license and terms of use"
+
+[connection signal="confirmed" from="LicenseDialog" to="." method="_on_license_confirmed"]
+[connection signal="canceled" from="LicenseDialog" to="." method="_on_license_canceled"]
+[connection signal="pressed" from="LicenseDialog/LicenseBody/LicenseLink" to="." method="_on_license_link_pressed"]
+[connection signal="pressed" from="LicenseDialog/LicenseBody/TermsLink" to="." method="_on_terms_link_pressed"]

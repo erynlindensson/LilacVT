@@ -29,6 +29,23 @@ func get_setting(path: String, default: Variant) -> Variant:
 func get_state():
 	return _data.duplicate(true)
 
+func set_setting(path: String, value: Variant) -> void:
+	var parts := path.split(".")
+	if parts.is_empty() or parts[0].is_empty():
+		return
+	if _data == null:
+		_data = {}
+	var cursor: Variant = _data
+	for i in range(parts.size() - 1):
+		var key: String = parts[i]
+		if not cursor is Dictionary:
+			return
+		if not cursor.has(key) or not cursor[key] is Dictionary:
+			cursor[key] = {}
+		cursor = cursor[key]
+	if cursor is Dictionary:
+		cursor[parts[parts.size() - 1]] = value
+
 func load_data():
 	var preferences = Files.read_json(UserSettings)
 	

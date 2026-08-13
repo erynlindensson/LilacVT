@@ -58,3 +58,10 @@ func _on_import_file_selected(path: String) -> void:
 		setup()
 	else:
 		_alert(error_message)
+
+func _on_browse_live2d_button_pressed() -> void:
+	var browser = preload("res://studio/hud/model_panel/live2d_browser/live2d_browser.tscn").instantiate()
+	browser.model_imported.connect(setup)
+	add_child(browser)
+	browser.popup_centered()
+

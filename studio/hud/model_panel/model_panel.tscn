@@ -36,6 +36,12 @@ custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
 text = "Import VRM Model"
 
+[node name="BrowseLive2dButton" type="Button" parent="VBoxContainer" unique_id=1548537747]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 36)
+layout_mode = 2
+text = "Browse Free Live2D Models"
+
 [node name="ScrollContainer" type="ScrollContainer" parent="VBoxContainer" unique_id=1971570335]
 layout_mode = 2
 size_flags_vertical = 3
@@ -68,4 +74,5 @@ filters = PackedStringArray("*.model3.json ; Live2D Model")
 [connection signal="pressed" from="VBoxContainer/DirectoryButton" to="." method="_on_directory_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/ImportLive2DButton" to="." method="_on_import_live2d_button_pressed"]
 [connection signal="pressed" from="VBoxContainer/ImportVrmButton" to="." method="_on_import_vrm_button_pressed"]
+[connection signal="pressed" from="VBoxContainer/BrowseLive2dButton" to="." method="_on_browse_live2d_button_pressed"]
 [connection signal="file_selected" from="ImportFileDialog" to="." method="_on_import_file_selected"]
