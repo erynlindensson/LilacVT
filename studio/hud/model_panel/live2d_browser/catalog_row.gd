@@ -1,13 +1,16 @@
 extends PanelContainer
 
-const Catalog = preload("res://lib/model/catalog/live2d_catalog.gd")
+const Catalog = preload("res://lib/model/catalog/model_catalog.gd")
+const Files = preload("res://lib/utils/files.gd")
 
 signal download_requested(entry: Dictionary)
 
 var entry: Dictionary = {}
+var _format: StringName = &"l2d"
 
-func setup(model_entry: Dictionary) -> void:
+func setup(model_entry: Dictionary, format: StringName = &"l2d") -> void:
 	entry = model_entry
+	_format = format
 	%Name.text = String(entry.get("name", "Untitled"))
 	%Author.text = String(entry.get("author", ""))
 	%License.text = String(entry.get("license", ""))
@@ -21,12 +24,12 @@ func setup(model_entry: Dictionary) -> void:
 	_load_preview(String(entry.get("preview", "")))
 
 func refresh_installed() -> void:
-	var installed := Catalog.is_installed(String(entry.get("dest_folder", "")))
+	var installed := Catalog.is_installed(_format, String(entry.get("dest_folder", "")))
 	%Get.text = "Installed" if installed else "Get"
 	%Get.disabled = installed
 
 func set_busy(busy: bool) -> void:
-	if Catalog.is_installed(String(entry.get("dest_folder", ""))):
+	if Catalog.is_installed(_format, String(entry.get("dest_folder", ""))):
 		%Get.disabled = true
 		return
 	%Get.disabled = busy
@@ -54,9 +57,7 @@ func _load_preview(url: String) -> void:
 	var body: PackedByteArray = completed[3]
 	if result != HTTPRequest.RESULT_SUCCESS or code != 200 or body.is_empty():
 		return
-	var img := Image.new()
-	if img.load_png_from_buffer(body) != OK:
-		if img.load_jpg_from_buffer(body) != OK:
-			if img.load_webp_from_buffer(body) != OK:
-				return
+	var img: Image = Files.image_from_buffer(body)
+	if img == null:
+		return
 	%Preview.texture = ImageTexture.create_from_image(img)

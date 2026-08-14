@@ -1,12 +1,19 @@
 extends Window
 
-const Catalog = preload("res://lib/model/catalog/live2d_catalog.gd")
+const Catalog = preload("res://lib/model/catalog/model_catalog.gd")
 const Fetcher = preload("res://lib/model/catalog/live2d_fetcher.gd")
 const RowScene = preload("res://studio/hud/model_panel/live2d_browser/catalog_row.tscn")
 
 signal model_imported
 
+var kind: String = "l2d"
+
 var _fetcher: Fetcher
+var _spec: Dictionary = {}
+var _format: StringName = &"l2d"
+var _license_pref: String = ""
+var _license_url: String = ""
+var _terms_url: String = ""
 var _rows: Array[Node] = []
 var _pending_entry: Dictionary = {}
 var _busy := false
@@ -14,8 +21,19 @@ var _busy := false
 @onready var _http_host: Node = $FetcherHost
 
 func _ready() -> void:
+	_spec = Catalog.spec_for(kind)
+	_format = StringName(_spec.get("format", &"l2d"))
+	_license_pref = String(_spec.get("license_pref", ""))
+	_license_url = String(_spec.get("license_url", ""))
+	_terms_url = String(_spec.get("terms_url", ""))
+	title = String(_spec.get("title", title))
+	%LicenseDialog.title = String(_spec.get("dialog_title", %LicenseDialog.title))
+	%LicenseDialog.dialog_text = String(_spec.get("dialog_text", %LicenseDialog.dialog_text))
+	%LicenseLink.text = String(_spec.get("license_link_text", %LicenseLink.text))
+	%TermsLink.text = String(_spec.get("terms_link_text", %TermsLink.text))
 	_fetcher = Fetcher.new()
 	_http_host.add_child(_fetcher)
+	_fetcher.configure(_spec)
 	_fetcher.progress.connect(_on_progress)
 	%Search.list = %ModelList
 	%LicenseAgree.toggled.connect(_on_license_agree_toggled)
@@ -51,7 +69,7 @@ func _load() -> void:
 			continue
 		var row = RowScene.instantiate()
 		%ModelList.add_child(row)
-		row.setup(entry)
+		row.setup(entry, _format)
 		row.download_requested.connect(_on_row_get_pressed)
 		_rows.append(row)
 	%Search.do_filter()
@@ -61,10 +79,10 @@ func _load() -> void:
 func _on_row_get_pressed(entry: Dictionary) -> void:
 	if _busy:
 		return
-	if Catalog.is_installed(String(entry.get("dest_folder", ""))):
+	if Catalog.is_installed(_format, String(entry.get("dest_folder", ""))):
 		_alert("Already installed")
 		return
-	if not Catalog.license_accepted():
+	if not bool(Preferences.get_setting(_license_pref, false)):
 		_pending_entry = entry
 		%LicenseDialog.popup_centered()
 		return
@@ -78,8 +96,9 @@ func _on_license_agree_toggled(pressed: bool) -> void:
 func _on_license_confirmed() -> void:
 	if not %LicenseAgree.button_pressed:
 		return
-	Catalog.accept_license()
-	var entry := _pending_entry
+	Preferences.set_setting(_license_pref, true)
+	Preferences.save_data()
+	var entry: Dictionary = _pending_entry
 	_pending_entry = {}
 	if not entry.is_empty():
 		await _start_download(entry)
@@ -88,10 +107,12 @@ func _on_license_canceled() -> void:
 	_pending_entry = {}
 
 func _on_license_link_pressed() -> void:
-	OS.shell_open("https://www.live2d.com/eula/live2d-free-material-license-agreement_en.html")
+	if not _license_url.is_empty():
+		OS.shell_open(_license_url)
 
 func _on_terms_link_pressed() -> void:
-	OS.shell_open("https://www.live2d.com/en/learn/sample/")
+	if not _terms_url.is_empty():
+		OS.shell_open(_terms_url)
 
 func _start_download(entry: Dictionary) -> void:
 	_busy = true

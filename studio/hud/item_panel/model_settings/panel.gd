@@ -113,6 +113,12 @@ func _ready():
 	%Movement/XValue.set_value_no_signal(model.movement_scale.x)
 	%Movement/YValue.set_value_no_signal(model.movement_scale.y)
 	%Movement/ZValue.set_value_no_signal(model.movement_scale.z)
+	%Movement/LockButton.set_pressed_no_signal(not model.movement_enabled)
+	%Movement/XValue.editable = model.movement_enabled
+	%Movement/YValue.editable = model.movement_enabled
+	%Movement/ZValue.editable = model.movement_enabled
+
+	_sync_physics_controls()
 	
 	model.request_delete.connect(close_requested.emit)
 	
@@ -240,6 +246,71 @@ func _on_movement_lock_button_toggled(toggled_on: bool) -> void:
 	%Movement/XValue.editable = !toggled_on
 	%Movement/YValue.editable = !toggled_on
 	%Movement/ZValue.editable = !toggled_on
+
+func _sync_physics_controls() -> void:
+	var has_physics := model.has_method("get_physics_controller") \
+		and model.get_physics_controller() != null
+	%PhysicsRow.visible = has_physics
+	%PhysicsGroups.visible = has_physics
+	for child in %PhysicsGroups.get_children():
+		child.queue_free()
+	if not has_physics:
+		return
+	%PhysicsStrength.set_value_no_signal(float(model.get("physics_strength")))
+	%PhysicsMode.select(int(model.get("physics_mode")))
+	if not model.has_method("get_physics_group_ids"):
+		return
+	var groups: PackedStringArray = model.get_physics_group_ids()
+	var saved: Dictionary = model.get("physics_groups") if "physics_groups" in model else {}
+	for group_id in groups:
+		if not saved.has(group_id):
+			saved[group_id] = 1.0
+	if "physics_groups" in model:
+		model.physics_groups = saved
+	for group_id in groups:
+		var row := HBoxContainer.new()
+		var label := Label.new()
+		label.text = group_id
+		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		label.clip_text = true
+		var spin := SpinBox.new()
+		spin.min_value = 0.0
+		spin.max_value = 2.0
+		spin.step = 0.05
+		spin.alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		spin.suffix = "×"
+		spin.set_value_no_signal(float(saved.get(group_id, 1.0)))
+		var captured := String(group_id)
+		spin.value_changed.connect(
+			func (v: float):
+				_on_physics_group_strength_changed(captured, v)
+		)
+		row.add_child(label)
+		row.add_child(spin)
+		%PhysicsGroups.add_child(row)
+
+func _on_physics_group_strength_changed(group_id: String, value: float) -> void:
+	if model == null or not ("physics_groups" in model):
+		return
+	var groups: Dictionary = model.physics_groups.duplicate()
+	groups[group_id] = value
+	model.physics_groups = groups
+	if model.has_method("_apply_physics_settings"):
+		model._apply_physics_settings()
+
+func _on_physics_strength_value_changed(value: float) -> void:
+	if model == null or not "physics_strength" in model:
+		return
+	model.physics_strength = value
+	if model.has_method("_apply_physics_settings"):
+		model._apply_physics_settings()
+
+func _on_physics_mode_item_selected(index: int) -> void:
+	if model == null or not "physics_mode" in model:
+		return
+	model.physics_mode = index
+	if model.has_method("_apply_physics_settings"):
+		model._apply_physics_settings()
 
 func _on_close_requested() -> void:
 	queue_free()

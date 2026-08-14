@@ -2,6 +2,9 @@ extends "../../vt_model.gd"
 
 const Collections = preload("res://lib/utils/collections.gd")
 const PoseLibrary = preload("./pose_library.gd")
+const RuntimeExtensions = preload("./runtime_extensions.gd")
+const ModelModifier = preload("../../modifier.gd")
+const MeshModifier = preload("./modifiers/mesh_modifier.gd")
 
 const VRM_BLENDSHAPES : PackedStringArray = [
 	# emotions
@@ -65,11 +68,15 @@ var camera: Camera3D
 var blendshapes_meshes = {}
 ## Model-local AABB at rest (ignores runtime position/scale/rotation).
 var _rest_aabb: AABB = AABB()
+var _face_move_offset: Vector2 = Vector2.ZERO
+var _face_move_z: float = 0.0
 ## Live values written by blueprints / apply_parameters.
 var _parameter_values: Dictionary[String, float] = {}
 ## Expression names that exist on this model's AnimationPlayer.
 var _expression_names: PackedStringArray = PackedStringArray()
 var _expression_controller: VrmExpressionController
+## Set Expression pins that the mixer/blueprint should not overwrite.
+var _pinned_expressions: Dictionary = {}
 ## Active body-pose bone rotations (bone name → Quaternion); Head/eyes excluded.
 var _pose_overrides: Dictionary = {}
 var _pose_tween: Tween
@@ -126,41 +133,43 @@ func _apply_transparent_aa_impl() -> void:
 func is_initialized():
 	return model != null
 	
-func load_vrm(path: String):
-		
-	var gltf: GLTFDocument = GLTFDocument.new()
-	var vrm_extension: GLTFDocumentExtension = preload("res://addons/vrm/vrm_extension.gd").new()
-	gltf.register_gltf_document_extension(vrm_extension, true)
-	
-	var state: GLTFState = GLTFState.new()
-	# state.handle_binary_image = GLTFState.HANDLE_BINARY_EMBED_AS_BASISU
+func load_vrm(path: String) -> Node:
+	RuntimeExtensions.ensure_registered()
 
-	# Ensure Tangents is required for meshes with blend shapes as of Godot 4.2.
-	# EditorSceneFormatImporter.IMPORT_GENERATE_TANGENT_ARRAYS = 8
-	# EditorSceneFormatImporter may not be available in release builds, so hardcode 8 for flags
-	state.set_additional_data(&"vrm/head_hiding_method", 3)
+	var gltf: GLTFDocument = GLTFDocument.new()
+	# vrm_extension.gd is VRM 0.x only and returns ERR_INVALID_DATA for VRMC_vrm.
+	var vrm_0x: GLTFDocumentExtension = null
+	if not RuntimeExtensions.file_uses_vrmc(path):
+		vrm_0x = preload("res://addons/vrm/vrm_extension.gd").new()
+		gltf.register_gltf_document_extension(vrm_0x, true)
+
+	var state: GLTFState = GLTFState.new()
+	# IgnoreHeadHiding: stage view needs the full head. Layers/Both crashes some VRM 1.0 files.
+	state.set_additional_data(&"vrm/head_hiding_method", 5)
 	state.set_additional_data(&"vrm/first_person_layers", 2)
 	state.set_additional_data(&"vrm/third_person_layers", 4)
-	
+
 	var err = gltf.append_from_file(path, state, 16 | 8 | 2)
 	if err != OK:
-		gltf.unregister_gltf_document_extension(vrm_extension)
-		return false
-	
-	var vrm = gltf.generate_scene(state)
-	
-	gltf.unregister_gltf_document_extension(vrm_extension)
-	
+		if vrm_0x != null:
+			gltf.unregister_gltf_document_extension(vrm_0x)
+		return null
+
+	var vrm: Node = gltf.generate_scene(state)
+
+	if vrm_0x != null:
+		gltf.unregister_gltf_document_extension(vrm_0x)
+
 	return vrm
 	
 func _build_model():
-	model = load_vrm(modelmeta.model)
+	model = load_vrm(modelmeta.model) as Node3D
 	await get_tree().process_frame
 	
 	if model == null:
 		return false
 	
-	var anim: AnimationPlayer = model.get_node("AnimationPlayer")
+	var anim: AnimationPlayer = _find_animation_player()
 	_parameters = {
 		"headRotX": _make_parameter("headRotX", "Head Rotation X", 0.0, -30.0, 30.0),
 		"headRotY": _make_parameter("headRotY", "Head Rotation Y", 0.0, -30.0, 30.0),
@@ -174,44 +183,54 @@ func _build_model():
 	blendshapes_meshes.clear()
 	_expression_names = PackedStringArray()
 	
-	# Collect mesh morph targets from RESET (baseline bindings).
-	if anim.has_animation("RESET"):
-		_register_blendshape_tracks(anim.get_animation("RESET"), "")
-	
-	# Prefer VRM 1.0 expression animation names (godot-vrm normalizes 0.x → 1.0).
-	for expr in VRM_BLENDSHAPES:
-		if expr.begins_with("headRot"):
-			continue
-		if not anim.has_animation(expr):
-			continue
-		_expression_names.append(expr)
-		_register_blendshape_tracks(anim.get_animation(expr), expr)
-		if not _parameters.has(expr):
-			_parameters[expr] = _make_parameter(expr, expr, 0.0, 0.0, 1.0)
-			_parameter_values[expr] = 0.0
-	
-	# Custom VRM expressions beyond the standard whitelist.
-	for clip_name in anim.get_animation_list():
-		if clip_name == "RESET" or clip_name.begins_with("headRot"):
-			continue
-		if clip_name in _expression_names:
-			continue
-		_expression_names.append(clip_name)
-		_register_blendshape_tracks(anim.get_animation(clip_name), clip_name)
-		if not _parameters.has(clip_name):
-			_parameters[clip_name] = _make_parameter(clip_name, clip_name, 0.0, 0.0, 1.0)
-			_parameter_values[clip_name] = 0.0
+	if anim != null:
+		# Collect mesh morph targets from RESET (baseline bindings).
+		if anim.has_animation("RESET"):
+			_register_blendshape_tracks(anim.get_animation("RESET"), "")
+		
+		# Prefer VRM 1.0 expression animation names (godot-vrm normalizes 0.x → 1.0).
+		for expr in VRM_BLENDSHAPES:
+			if expr.begins_with("headRot"):
+				continue
+			if not anim.has_animation(expr):
+				continue
+			_expression_names.append(expr)
+			_register_blendshape_tracks(anim.get_animation(expr), expr)
+			if not _parameters.has(expr):
+				_parameters[expr] = _make_parameter(expr, expr, 0.0, 0.0, 1.0)
+				_parameter_values[expr] = 0.0
+		
+		# Custom VRM expressions beyond the standard whitelist.
+		for clip_name in anim.get_animation_list():
+			if clip_name == "RESET" or clip_name.begins_with("headRot"):
+				continue
+			if clip_name in _expression_names:
+				continue
+			_expression_names.append(clip_name)
+			_register_blendshape_tracks(anim.get_animation(clip_name), clip_name)
+			if not _parameters.has(clip_name):
+				_parameters[clip_name] = _make_parameter(clip_name, clip_name, 0.0, 0.0, 1.0)
+				_parameter_values[clip_name] = 0.0
 	
 	_expression_controller = VrmExpressionController.new(self, _expression_names)
 	_pose_overrides.clear()
 	
 	vp.add_child(model)
 	
-	(model.get_node("GeneralSkeleton") as Skeleton3D).reset_bone_poses()
-	anim.play("RESET")
+	var skeleton: Skeleton3D = _get_skeleton()
+	if skeleton != null:
+		skeleton.reset_bone_poses()
+	if anim != null and anim.has_animation("RESET"):
+		anim.play("RESET")
+		await get_tree().process_frame
+		anim.stop()
 	await get_tree().process_frame
 	
-	_meshes = model.find_children("*", "VisualInstance3D")
+	_meshes = model.find_children("*", "MeshInstance3D", true, false)
+	mesh_settings.clear()
+	for mesh_node in _meshes:
+		if mesh_node is MeshInstance3D:
+			mesh_settings[StringName(mesh_node.name)] = MeshModifier.new(mesh_node as MeshInstance3D)
 	_rest_aabb = _compute_local_aabb()
 	
 	vp.size = Vector2i(1280, 720)
@@ -245,7 +264,8 @@ func _register_blendshape_tracks(animation: Animation, expression_name: String) 
 		blendshapes_meshes[morph] = meshes
 		if not _parameters.has(morph):
 			var default_v: float = 0.0
-			if animation.track_get_key_count(track_index) > 0:
+			# Only RESET should define rest weights. Expression clips store the *on* value.
+			if expression_name.is_empty() and animation.track_get_key_count(track_index) > 0:
 				default_v = float(animation.track_get_key_value(track_index, 0))
 			_parameters[morph] = _make_parameter(morph, morph, default_v, 0.0, 1.0)
 			_parameter_values[morph] = default_v
@@ -281,14 +301,15 @@ func _apply_stage_transform(stage_position: Vector2, stage_scale: Vector2, ypr: 
 	var stage_vp := get_viewport()
 	var src_size: Vector2 = stage_vp.get_visible_rect().size if stage_vp else Vector2(vp.size)
 	var dst_size := Vector2(vp.size)
+	var moved_stage := stage_position + _face_move_offset
 	var mapped := Vector2(
-		stage_position.x / maxf(src_size.x, 1.0) * dst_size.x,
-		stage_position.y / maxf(src_size.y, 1.0) * dst_size.y
+		moved_stage.x / maxf(src_size.x, 1.0) * dst_size.x,
+		moved_stage.y / maxf(src_size.y, 1.0) * dst_size.y
 	)
 	if not mapped.is_finite():
 		return
 	var depth := camera.position.z
-	var s := maxf(stage_scale.x, 0.01)
+	var s := maxf(stage_scale.x, 0.01) * (1.0 + _face_move_z)
 	var local_center := _rest_aabb.get_center()
 	var projected: Vector3 = camera.project_position(mapped, depth)
 	if not projected.is_finite():
@@ -339,6 +360,11 @@ func get_origin() -> Vector2:
 	return vp.size / 2.0
 
 var _meshes = []
+var mesh_settings: Dictionary[StringName, ModelModifier] = {}
+var modifier_map = {
+	"modifiers/meshes/": mesh_settings,
+}
+
 func get_meshes() -> Array:
 	return _meshes
 	
@@ -356,6 +382,22 @@ func _make_parameter(id: String, display_name: String, default_value: float, min
 		"range": Vector2(min_value, max_value),
 	}
 
+func _get_property_list() -> Array[Dictionary]:
+	var properties: Array[Dictionary] = []
+	for prefix in modifier_map:
+		var settings: Dictionary = modifier_map[prefix]
+		for part_name in settings:
+			var modifier: ModelModifier = settings[part_name]
+			for prop in modifier.get_property_list():
+				if not (int(prop.usage) & PROPERTY_USAGE_STORAGE):
+					continue
+				if String(prop.name) == "script":
+					continue
+				properties.append(prop.merged({
+					"name": "%s%s/%s" % [prefix, String(part_name), String(prop.name)]
+				}, true))
+	return properties
+
 func _get(property: StringName) -> Variant:
 	var prop := String(property)
 	if prop.begins_with("parameters/"):
@@ -372,6 +414,16 @@ func _get(property: StringName) -> Variant:
 	if prop.begins_with("modifiers/parameters/") and prop.ends_with("/visible"):
 		var pid := prop.trim_prefix("modifiers/parameters/").trim_suffix("/visible")
 		return _parameters.has(pid)
+	for prefix in modifier_map:
+		if not prop.begins_with(prefix):
+			continue
+		var modifiers: Dictionary = modifier_map[prefix]
+		var segments: PackedStringArray = prop.trim_prefix(prefix).split("/")
+		if segments.size() < 2:
+			return null
+		var modifier: ModelModifier = modifiers.get(StringName(segments[0]))
+		if modifier:
+			return modifier.get(segments[1])
 	return null
 
 func _set(property: StringName, value: Variant) -> bool:
@@ -382,9 +434,24 @@ func _set(property: StringName, value: Variant) -> bool:
 		var id := prop.trim_prefix("parameters/")
 		if not _parameters.has(id):
 			return false
+		if _pinned_expressions.has(id):
+			return true
 		_parameter_values[id] = float(value)
 		_apply_current_parameters()
 		return true
+	for prefix in modifier_map:
+		if not prop.begins_with(prefix):
+			continue
+		var modifiers: Dictionary = modifier_map[prefix]
+		var segments: PackedStringArray = prop.trim_prefix(prefix).split("/")
+		if segments.size() < 2:
+			return false
+		var modifier: ModelModifier = modifiers.get(StringName(segments[0]))
+		if modifier:
+			var old_value: Variant = modifier.get(segments[1])
+			modifier.set(segments[1], value)
+			modifier_updated.emit.call_deferred(property, value, old_value)
+			return true
 	return false
 
 func _property_get_revert(property: StringName) -> Variant:
@@ -392,10 +459,28 @@ func _property_get_revert(property: StringName) -> Variant:
 	if prop.begins_with("parameters/") and not prop.ends_with("/range") and not prop.ends_with("/default"):
 		var id := prop.trim_prefix("parameters/")
 		return _parameters.get(id, {}).get("default", 0.0)
+	for prefix in modifier_map:
+		if not prop.begins_with(prefix):
+			continue
+		var segments: PackedStringArray = prop.trim_prefix(prefix).split("/")
+		if segments.size() < 2:
+			return null
+		var settings: ModelModifier = modifier_map[prefix].get(StringName(segments[0]))
+		if settings:
+			return settings.property_get_revert(segments[1])
 	return null
 
-func tracking_updated(_tracking_data: Dictionary, _delta: float):
-	pass
+func tracking_updated(tracking_data: Dictionary, _delta: float):
+	if not movement_enabled:
+		if _face_move_offset != Vector2.ZERO or not is_zero_approx(_face_move_z):
+			_face_move_offset = Vector2.ZERO
+			_face_move_z = 0.0
+			_sync_stage_to_model()
+		return
+	var movement := face_movement_from_tracking(tracking_data)
+	_face_move_offset = face_movement_offset(movement)
+	_face_move_z = movement.z
+	_sync_stage_to_model()
 
 func apply_parameters(values: Dictionary[String, float]):
 	if model == null or not model.is_inside_tree():
@@ -403,30 +488,47 @@ func apply_parameters(values: Dictionary[String, float]):
 	# Mixer may call with {}; keep last blueprint-driven values instead of resetting.
 	if not values.is_empty():
 		for key in values.keys():
-			_parameter_values[String(key)] = float(values[key])
+			var id := String(key)
+			if _pinned_expressions.has(id):
+				continue
+			_parameter_values[id] = float(values[key])
 	_apply_current_parameters()
+
+func _apply_blendshape_param(param_name: String, weight: float) -> void:
+	var blend_meshes: Array = blendshapes_meshes.get(param_name, [])
+	for path in blend_meshes:
+		var node_path: NodePath = path
+		var mesh_node: Node = model.get_node_or_null(NodePath(node_path.get_concatenated_names()))
+		if mesh_node == null:
+			mesh_node = model.get_node_or_null(node_path)
+		if mesh_node == null:
+			continue
+		var morph := String(node_path.get_concatenated_subnames())
+		if morph.is_empty():
+			morph = String(node_path.get_subname(0))
+		if morph.is_empty():
+			morph = param_name
+		mesh_node.set("blend_shapes/%s" % morph, weight)
 
 func _apply_current_parameters() -> void:
 	if model == null or not model.is_inside_tree():
 		return
-	
+
+	# Rest morphs first, then expression presets so they win (RESET keys are 0 and
+	# would otherwise clobber Set Expression after dictionary insertion order).
+	var expr_set: Dictionary = {}
+	for expr in _expression_names:
+		expr_set[expr] = true
 	for param_name in _parameter_values.keys():
-		if param_name.begins_with("headRot"):
+		if param_name.begins_with("headRot") or expr_set.has(param_name):
 			continue
-		var weight: float = _parameter_values[param_name]
-		var blend_meshes: Array = blendshapes_meshes.get(param_name, [])
-		for path in blend_meshes:
-			var node_path: NodePath = path
-			var mesh_node = model.get_node_or_null(node_path)
-			if mesh_node == null:
-				continue
-			var morph := String(node_path.get_subname(0))
-			if morph.is_empty():
-				morph = param_name
-			mesh_node.set("blend_shapes/%s" % morph, weight)
+		_apply_blendshape_param(String(param_name), float(_parameter_values[param_name]))
+	for expr in _expression_names:
+		if _parameter_values.has(expr):
+			_apply_blendshape_param(String(expr), float(_parameter_values[expr]))
 	
 	# Head: FaceAngleX→yaw(Y), FaceAngleY→pitch(X), FaceAngleZ→roll(Z); values in degrees.
-	var skeleton := model.get_node_or_null("GeneralSkeleton") as Skeleton3D
+	var skeleton := _get_skeleton()
 	if skeleton == null:
 		return
 	var has_head := (
@@ -454,6 +556,7 @@ func toggle_expression(
 ) -> void:
 	var targets: Dictionary = {}
 	if expression_name.is_empty():
+		_pinned_expressions.clear()
 		for name in _expression_names:
 			if _parameter_values.has(name):
 				targets[name] = 0.0
@@ -463,6 +566,8 @@ func toggle_expression(
 		return
 	# Dialog / exclusive: clear every other expression so blendshapes don't stack.
 	if activate and exclusive:
+		_pinned_expressions.clear()
+		_pinned_expressions[expression_name] = true
 		for name in _expression_names:
 			if name == expression_name:
 				continue
@@ -470,10 +575,16 @@ func toggle_expression(
 				targets[name] = 0.0
 	elif activate and expression_name in _MOOD_EXPRESSIONS:
 		for mood in _MOOD_EXPRESSIONS:
+			_pinned_expressions.erase(mood)
 			if mood == expression_name:
 				continue
 			if _parameter_values.has(mood) and float(_parameter_values.get(mood, 0.0)) != 0.0:
 				targets[mood] = 0.0
+		_pinned_expressions[expression_name] = true
+	elif not activate:
+		_pinned_expressions.erase(expression_name)
+	else:
+		_pinned_expressions[expression_name] = true
 	targets[expression_name] = 1.0 if activate else 0.0
 	_tween_expression_values(targets, duration)
 
@@ -571,7 +682,27 @@ func _tween_pose_overrides(target: Dictionary, duration: float) -> void:
 func _get_skeleton() -> Skeleton3D:
 	if model == null:
 		return null
-	return model.get_node_or_null("GeneralSkeleton") as Skeleton3D
+	var named: Skeleton3D = model.get_node_or_null("GeneralSkeleton") as Skeleton3D
+	if named != null:
+		return named
+	var unique_skel: Skeleton3D = model.get_node_or_null("%GeneralSkeleton") as Skeleton3D
+	if unique_skel != null:
+		return unique_skel
+	var found: Array[Node] = model.find_children("*", "Skeleton3D", true, false)
+	if found.is_empty():
+		return null
+	return found[0] as Skeleton3D
+
+func _find_animation_player() -> AnimationPlayer:
+	if model == null:
+		return null
+	var named: AnimationPlayer = model.get_node_or_null("AnimationPlayer") as AnimationPlayer
+	if named != null:
+		return named
+	var found: Array[Node] = model.find_children("*", "AnimationPlayer", true, false)
+	if found.is_empty():
+		return null
+	return found[0] as AnimationPlayer
 
 func _apply_pose_overrides(skeleton: Skeleton3D = null) -> void:
 	if skeleton == null:
@@ -612,6 +743,21 @@ func set_stage_lighting(color: Color, intensity: float) -> void:
 		camera.environment.ambient_light_color = color
 		camera.environment.ambient_light_energy = _BASE_AMBIENT_ENERGY * energy
 		
+func save_model_settings(settings: Dictionary):
+	super.save_model_settings(settings)
+	settings["modifiers"] = {
+		"meshes": Collections.remap(mesh_settings, func (v): return Serializers.ObjSerializer.to_json(v)),
+	}
+
+func load_model_settings(settings: Dictionary):
+	super.load_model_settings(settings)
+	var saved_meshes: Dictionary = settings.get("modifiers", {}).get("meshes", {})
+	for mesh_name in mesh_settings:
+		var modifier: ModelModifier = mesh_settings[mesh_name]
+		var saved: Dictionary = saved_meshes.get(String(mesh_name), {})
+		if not saved.is_empty():
+			Serializers.ObjSerializer.from_json(saved, modifier)
+
 func apply_modifier(part: Node, modifier: Dictionary):
 	var modifiers = get_modifiers(part)
 	
@@ -657,9 +803,7 @@ func get_modifiers(part: Node):
 	})
 
 func get_idle_animation_player() -> AnimationPlayer:
-	if model == null:
-		return null
-	return model.get_node_or_null("AnimationPlayer") as AnimationPlayer
+	return _find_animation_player()
 	
 func get_animation_player() -> AnimationPlayer:
 	return null

@@ -1,0 +1,55 @@
+{
+  "catalog_version": 1,
+  "source_name": "VRM specification official samples",
+  "license_notice": "These models are official VRM samples. Use requires the VRM Public License 1.0.",
+  "models": [
+    {
+      "id": "vrm-seed-san",
+      "name": "Seed-san",
+      "author": "VirtualCast, Inc.",
+      "description": "VRM 1.0 sample with MToon, spring bones, constraints, and expressions. Suitable as a VTuber avatar.",
+      "license": "VRM Public License 1.0",
+      "license_url": "https://vrm.dev/en/licenses/1.0/",
+      "terms_url": "https://github.com/vrm-c/vrm-specification/tree/master/samples/Seed-san",
+      "preview": "https://cdn.jsdelivr.net/gh/vrm-c/vrm-specification@master/samples/Seed-san/screenshot/screenshot.png",
+      "dest_folder": "seed-san",
+      "source": {
+        "type": "file",
+        "url": "https://cdn.jsdelivr.net/gh/vrm-c/vrm-specification@master/samples/Seed-san/vrm/Seed-san.vrm",
+        "filename": "Seed-san.vrm"
+      }
+    },
+    {
+      "id": "vrm-constraint-twist",
+      "name": "Constraint Twist Sample",
+      "author": "VRM Consortium",
+      "description": "VRM 1.0 sample demonstrating roll/aim constraints, look-at, spring bones, and MToon.",
+      "license": "VRM Public License 1.0",
+      "license_url": "https://vrm.dev/en/licenses/1.0/",
+      "terms_url": "https://github.com/vrm-c/vrm-specification/tree/master/samples/VRM1_Constraint_Twist_Sample",
+      "preview": "https://cdn.jsdelivr.net/gh/vrm-c/vrm-specification@master/samples/VRM1_Constraint_Twist_Sample/screenshot/screenshot.jpg",
+      "dest_folder": "vrm1-constraint-twist",
+      "source": {
+        "type": "file",
+        "url": "https://cdn.jsdelivr.net/gh/vrm-c/vrm-specification@master/samples/VRM1_Constraint_Twist_Sample/vrm/VRM1_Constraint_Twist_Sample.vrm",
+        "filename": "VRM1_Constraint_Twist_Sample.vrm"
+      }
+    },
+    {
+      "id": "vrm-mtoon-uv-animation",
+      "name": "MToon UV Animation Test",
+      "author": "VRM Consortium",
+      "description": "VRM 1.0 sample for MToon UV animation.",
+      "license": "VRM Public License 1.0",
+      "license_url": "https://vrm.dev/en/licenses/1.0/",
+      "terms_url": "https://github.com/vrm-c/vrm-specification/tree/master/samples/VRMC_materials_mtoon_UV_Animation_Test",
+      "preview": "https://cdn.jsdelivr.net/gh/vrm-c/vrm-specification@master/samples/VRMC_materials_mtoon_UV_Animation_Test/screenshot/screenshot.jpg",
+      "dest_folder": "vrm-mtoon-uv-animation",
+      "source": {
+        "type": "file",
+        "url": "https://cdn.jsdelivr.net/gh/vrm-c/vrm-specification@master/samples/VRMC_materials_mtoon_UV_Animation_Test/vrm/VRMC_materials_mtoon_UV_Animation_Test.vrm",
+        "filename": "VRMC_materials_mtoon_UV_Animation_Test.vrm"
+      }
+    }
+  ]
+}

@@ -59,9 +59,27 @@ class ObjSerializerImpl extends JsonSerializer:
 			var existing = assign.get(p.name)
 			var value = v.get(p.name)
 			if p.type == Variant.Type.TYPE_COLOR:
-				value = Color.from_string(value, existing as Color)
+				# VTS stores colors as {r,g,b,a}; Open-VT writes HTML strings.
+				if value is Dictionary:
+					var d: Dictionary = value
+					var fallback: Color = existing as Color if existing is Color else Color.WHITE
+					value = Color(
+						float(d.get("r", fallback.r)),
+						float(d.get("g", fallback.g)),
+						float(d.get("b", fallback.b)),
+						float(d.get("a", fallback.a))
+					)
+				elif value is String:
+					value = Color.from_string(value, existing as Color)
+				elif value == null:
+					value = existing
+				else:
+					value = existing if existing is Color else Color.WHITE
 			if p.type == Variant.Type.TYPE_VECTOR2:
-				value = Vec2SerializerImpl.new().from_json(value, existing as Vector2)
+				if value is Dictionary:
+					value = Vec2SerializerImpl.new().from_json(value, existing as Vector2)
+				elif value == null:
+					value = existing
 			if value == null:
 				value = existing
 			assign.set(p.name, value)

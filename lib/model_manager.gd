@@ -4,6 +4,7 @@ const Files = preload("res://lib/utils/files.gd")
 const ModelMeta = preload("res://lib/model/metadata.gd")
 const ModelLoader = preload("res://lib/model/formats/model_loader.gd")
 const VtModel = preload("res://lib/model/vt_model.gd")
+const VrmRuntime = preload("res://lib/model/formats/vrm/runtime_extensions.gd")
 
 var formats: Dictionary[String, ModelLoader] = {}
 
@@ -11,6 +12,7 @@ var model_cache: Dictionary = {}
 signal list_updated(models: Array)
 
 func _ready() -> void:
+	VrmRuntime.ensure_registered()
 	formats = {
 		"l2d": preload("res://lib/model/formats/l2d/model_loader.gd").new(),
 		"vrm": preload("res://lib/model/formats/vrm/model_loader.gd").new(),

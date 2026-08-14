@@ -16,7 +16,7 @@ func _initialize() -> void:
 		assert(not String(entry.get("dest_folder", "")).is_empty())
 		assert(not String(entry.get("license_url", "")).is_empty())
 		var source: Dictionary = entry.get("source", {})
-		assert(source.get("type") in ["github_dir", "zip"])
+		assert(source.get("type") in ["github_dir", "zip", "file"])
 		if source.get("type") == "github_dir":
 			assert(not String(source.get("repo", "")).is_empty())
 			assert(not String(source.get("path", "")).is_empty())

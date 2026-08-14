@@ -15,6 +15,9 @@ const MeshModifier = preload("./modifiers/mesh_modifier.gd")
 var param_settings: Dictionary[StringName, ModelModifier] = {}
 var part_settings: Dictionary[StringName, ModelModifier] = {}
 var mesh_settings: Dictionary[StringName, ModelModifier] = {}
+var physics_strength: float = 1.0
+var physics_mode: int = 0
+var physics_groups: Dictionary = {}
 var modifier_map = {
 	"modifiers/parts/": part_settings,
 	"modifiers/meshes/": mesh_settings,
@@ -212,6 +215,7 @@ func _build_model():
 	#var physics = GDCubismEffectPhysics.new()
 	#loaded_model.add_child(physics)
 	#physics.name = "Physics"
+	_apply_physics_settings()
 	
 	for m in get_meshes():
 		if (m as MeshInstance2D).mesh.get_surface_count() <= 0:
@@ -242,24 +246,17 @@ func apply_parameters(values: Dictionary):
 		model.set(p_name, values.get(p_name, 0.0))
 	
 func tracking_updated(tracking_data: Dictionary, _delta: float):
-	if not movement_enabled:
+	if model == null:
 		return
-	
-	var moved = Vector3(
-		Registry.signed_ilerp_input(
-			tracking_data.get("FacePositionX", 0),
-			"FacePositionX",
-		),
-		Registry.signed_ilerp_input(
-			tracking_data.get("FacePositionY", 0),
-			"FacePositionY",
-		),
-		Registry.signed_ilerp_input(
-			tracking_data.get("FacePositionZ", 0),
-			"FacePositionZ",
-		)
-	)
-	var movement = moved * movement_scale
+	if not movement_enabled:
+		model.position = Vector2.ZERO
+		model.scale = Vector2.ONE
+		return
+
+	var movement := face_movement_from_tracking(tracking_data)
+	model.position = Vector2(movement.x, -movement.y) * Vector2(model.size) * FACE_MOVE_SPAN
+	if locked:
+		model.position = Vector2.ZERO
 	model.scale = Vector2.ONE + (Vector2.ONE * movement.z)
 
 func get_texture() -> Texture2D:
@@ -387,12 +384,12 @@ func _load_from_vts():
 		
 	var movement_settings = vtube_data.get("ModelPositionMovement", {})
 	movement_enabled = movement_settings.get("Use", false)
-	# vts movement based on 10 = +100% scale
-	#movement_scale = Vector3(
-	#	inverse_lerp(0.0, 10.0, movement_settings.get("X", 0.0)),
-	#	inverse_lerp(0.0, 10.0, movement_settings.get("Y", 0.0)),
-	#	inverse_lerp(0.0, 10.0, movement_settings.get("Z", 0.0))
-	#)
+	# VTS stores 10 as +100% of the FacePosition range.
+	movement_scale = Vector3(
+		inverse_lerp(0.0, 10.0, float(movement_settings.get("X", 0.0))),
+		inverse_lerp(0.0, 10.0, float(movement_settings.get("Y", 0.0))),
+		inverse_lerp(0.0, 10.0, float(movement_settings.get("Z", 0.0)))
+	)
 
 	var mesh_details = vtube_data.get("ArtMeshDetails", {})
 	var pin_settings = mesh_details.get("ArtMeshesExcludedFromPinning", [])
@@ -428,12 +425,25 @@ func save_model_settings(settings: Dictionary):
 		"meshes": Collections.remap(mesh_settings, func (v): return Serializers.ObjSerializer.to_json(v)),
 		"parts": Collections.remap(part_settings, func (v): return Serializers.ObjSerializer.to_json(v))
 	}
+	settings["physics"] = {
+		"strength": physics_strength,
+		"mode": physics_mode,
+		"groups": physics_groups,
+	}
 	
 	_save_to_vts()
 	
 func load_model_settings(settings: Dictionary):
 	_load_from_vts()
 	super.load_model_settings(settings)
+
+	var physics: Dictionary = settings.get("physics", {})
+	physics_strength = float(physics.get("strength", physics_strength))
+	physics_mode = int(physics.get("mode", physics_mode))
+	var saved_groups: Variant = physics.get("groups", {})
+	if saved_groups is Dictionary:
+		physics_groups = saved_groups
+	_apply_physics_settings()
 
 	for p in self.get_parameters():
 		var modifier = param_settings[StringName(p)]
@@ -452,4 +462,40 @@ func load_model_settings(settings: Dictionary):
 		var modifier = part_settings[p]
 		var saved = settings.get("modifiers", {}).get("parts", {}).get(p, {})
 		Serializers.ObjSerializer.from_json(saved, modifier)
+
+func get_physics_controller() -> Node:
+	if model == null:
+		return null
+	return model.get_node_or_null("PhysicsController")
+
+func get_physics_group_ids() -> PackedStringArray:
+	var ids := PackedStringArray()
+	if modelmeta == null or String(modelmeta.physics).is_empty():
+		return ids
+	if not FileAccess.file_exists(modelmeta.physics):
+		return ids
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(modelmeta.physics))
+	if not (parsed is Dictionary):
+		return ids
+	for setting in parsed.get("PhysicsSettings", []):
+		if setting is Dictionary:
+			var group_id := String(setting.get("Id", ""))
+			if not group_id.is_empty():
+				ids.append(group_id)
+	return ids
+
+func _apply_physics_settings() -> void:
+	var controller := get_physics_controller()
+	if controller == null:
+		return
+	if "mode" in controller:
+		controller.mode = physics_mode
+	if "strength" in controller:
+		var group_mul := 1.0
+		if not physics_groups.is_empty():
+			var sum := 0.0
+			for key in physics_groups:
+				sum += float(physics_groups[key])
+			group_mul = sum / float(physics_groups.size())
+		controller.strength = physics_strength * group_mul
 	

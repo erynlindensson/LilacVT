@@ -26,6 +26,8 @@ var active_graph: Blueprint :
 
 # Called when the node enters the scene tree for the first time.
 func _ready() -> void:
+	get_viewport().gui_embed_subwindows = true
+
 	for i in %Profiles.get_children():
 		i.queue_free()
 	
@@ -59,6 +61,9 @@ func _ready() -> void:
 			%Profiles.current_tab = %Profiles.get_tab_count() - 1
 	)
 
+	%EditPopup.add_button("Delete", true, "Delete")
+	%EditPopup.add_cancel_button("Cancel")
+
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_PREDELETE:
 		if active_model:
@@ -80,7 +85,8 @@ func save_settings(model_data: Dictionary):
 	model_data["graphs"] = graphs
 	
 func _on_profile_name_text_changed(new_text: String) -> void:
-	active_graph.name = new_text
+	if active_graph:
+		active_graph.name = new_text
 	
 func _on_profile_enabled_toggled(toggled_on: bool) -> void:
 	active_graph.process_mode = PROCESS_MODE_INHERIT if toggled_on else PROCESS_MODE_DISABLED
@@ -98,10 +104,41 @@ func _on_close_requested() -> void:
 	queue_free()
 
 func _on_profiles_tab_selected(_tab: int) -> void:
-	%ProfileName.text = %Profiles.get_current_tab_control().name
+	_sync_profile_fields()
+
+func _sync_profile_fields() -> void:
+	var current_tab = %Profiles.get_current_tab_control()
+	if current_tab == null:
+		return
+	%ProfileName.text = current_tab.name
 	%ProfileEnabled.set_pressed_no_signal(
-		%Profiles.get_current_tab_control().process_mode != PROCESS_MODE_DISABLED
+		current_tab.process_mode != PROCESS_MODE_DISABLED
 	)
+	%EditProfileName.text = current_tab.name
+	%EditProfileEnabled.set_pressed_no_signal(
+		current_tab.process_mode != PROCESS_MODE_DISABLED
+	)
+
+func _on_profiles_tab_clicked(_tab: int) -> void:
+	if %TabClickTimer.time_left > 0.0:
+		_sync_profile_fields()
+		%EditPopup.popup_centered()
+	else:
+		%TabClickTimer.start()
+
+func _on_edit_popup_custom_action(action: StringName) -> void:
+	if action == &"Delete":
+		_on_delete_profile_pressed()
+	%EditPopup.hide()
+
+func _on_edit_popup_confirmed() -> void:
+	if active_graph == null:
+		return
+	active_graph.name = %EditProfileName.text
+	active_graph.process_mode = (
+		PROCESS_MODE_INHERIT if %EditProfileEnabled.button_pressed else PROCESS_MODE_DISABLED
+	)
+	_sync_profile_fields()
 
 func _on_delete_confirmed() -> void:
 	active_graph.queue_free()
