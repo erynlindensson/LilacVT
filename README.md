@@ -42,6 +42,7 @@ Upstream strengths (Linux-native, open source, VTS-oriented assets, pixel filter
 ### Supported trackers
 
 - **OpenSeeFace** — bundled sources + setup script; use **Start Tracking** / **Stop Tracking** in Camera settings (feature tag: `openseeface`)
+- **Mediapipe (Experimental)** — Google MediaPipe Face Landmarker. Shown only when the CPU has AVX (MediaPipe’s pip wheel is AVX-only). Without AVX, use OpenSeeFace. Setup: `scripts/setup_mediapipe.sh`
 - **VTube Studio** — TCP over Wi-Fi (phone app), as in upstream
 
 ### Differences from closed-source alternatives
@@ -78,6 +79,7 @@ Follow submodule / `thirdparty/` readmes as needed, then:
 ```bash
 ./build_dependencies.sh
 ./scripts/setup_openseeface.sh   # Lilac: OpenSeeFace venv + deps
+./scripts/setup_mediapipe.sh     # optional: MediaPipe Face Landmarker venv (AVX CPUs)
 ```
 
 Export Linux package (after a release export):

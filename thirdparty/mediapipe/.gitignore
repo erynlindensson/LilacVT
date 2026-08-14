@@ -1,0 +1,6 @@
+.venv/
+__pycache__/
+*.pyc
+models/*.task
+models/*.onnx
+models/lbfmodel.yaml
