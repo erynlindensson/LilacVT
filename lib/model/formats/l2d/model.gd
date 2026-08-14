@@ -469,6 +469,11 @@ func get_physics_controller() -> Node:
 	return model.get_node_or_null("PhysicsController")
 
 func get_physics_group_ids() -> PackedStringArray:
+	var controller := get_physics_controller()
+	if controller != null and controller.has_method("get_group_ids"):
+		var native_ids: Variant = controller.call("get_group_ids")
+		if native_ids is PackedStringArray and native_ids.size() > 0:
+			return native_ids
 	var ids := PackedStringArray()
 	if modelmeta == null or String(modelmeta.physics).is_empty():
 		return ids
@@ -491,11 +496,8 @@ func _apply_physics_settings() -> void:
 	if "mode" in controller:
 		controller.mode = physics_mode
 	if "strength" in controller:
-		var group_mul := 1.0
-		if not physics_groups.is_empty():
-			var sum := 0.0
-			for key in physics_groups:
-				sum += float(physics_groups[key])
-			group_mul = sum / float(physics_groups.size())
-		controller.strength = physics_strength * group_mul
+		controller.strength = physics_strength
+	if controller.has_method("set_group_strength"):
+		for key in physics_groups:
+			controller.call("set_group_strength", String(key), float(physics_groups[key]))
 	
