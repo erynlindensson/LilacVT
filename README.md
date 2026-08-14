@@ -1,7 +1,4 @@
 <p align="center">
-  <img src="branding/monochrome.svg" width="180" />
-</p>
-<p align="center">
   <a href="https://github.com/erynlindensson/LilacVT/releases">Releases</a>
   ·
   <a href="https://github.com/erodozer/open-vt">Upstream open-vt</a>
