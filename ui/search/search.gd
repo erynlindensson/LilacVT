@@ -15,6 +15,8 @@ func _ready():
 	do_filter()
 
 func do_filter():
+	if list == null:
+		return
 	var _txt = text
 	for item in list.get_children():
 		var i: String

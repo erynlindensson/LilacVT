@@ -19,8 +19,11 @@ RUN apt install -y \
         libffi-dev \
         liblzma-dev \
         zip \
-        git \
-        rust
+        git
+
+# Debian has no `rust` apt package; install the toolchain via rustup.
+RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+ENV PATH="/root/.cargo/bin:${PATH}"
 
 
 # install pyenv and poetry for building godot extensions

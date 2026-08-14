@@ -1,0 +1,143 @@
+{
+  "catalog_version": 1,
+  "source_name": "Live2D Cubism official samples",
+  "license_notice": "These models are Live2D sample data. Use requires the Free Material License Agreement and Cubism Sample Data Terms of Use.",
+  "models": [
+    {
+      "id": "live2d-haru",
+      "name": "Haru",
+      "author": "Live2D Inc.",
+      "description": "Standard sample with outfit changes, physics, expressions, and motions.",
+      "license": "Live2D Free Material License",
+      "license_url": "https://www.live2d.com/eula/live2d-free-material-license-agreement_en.html",
+      "terms_url": "https://www.live2d.com/en/learn/sample/",
+      "preview": "https://cdn.jsdelivr.net/gh/Live2D/CubismWebSamples@develop/Samples/Resources/Haru/Haru.2048/texture_00.png",
+      "dest_folder": "haru",
+      "source": {
+        "type": "github_dir",
+        "repo": "Live2D/CubismWebSamples",
+        "path": "Samples/Resources/Haru",
+        "ref": "develop"
+      }
+    },
+    {
+      "id": "live2d-hiyori",
+      "name": "Hiyori Momose",
+      "author": "Live2D Inc.",
+      "description": "Front-facing sample suited to avatar use, with physics and motions.",
+      "license": "Live2D Free Material License",
+      "license_url": "https://www.live2d.com/eula/live2d-free-material-license-agreement_en.html",
+      "terms_url": "https://www.live2d.com/en/learn/sample/",
+      "preview": "https://cdn.jsdelivr.net/gh/Live2D/CubismWebSamples@develop/Samples/Resources/Hiyori/Hiyori.2048/texture_00.png",
+      "dest_folder": "hiyori",
+      "source": {
+        "type": "github_dir",
+        "repo": "Live2D/CubismWebSamples",
+        "path": "Samples/Resources/Hiyori",
+        "ref": "develop"
+      }
+    },
+    {
+      "id": "live2d-mao",
+      "name": "Niziiro Mao",
+      "author": "Live2D Inc.",
+      "description": "Cubism 5 sample with blend shapes, multiply/screen colors, and a wide face range.",
+      "license": "Live2D Free Material License",
+      "license_url": "https://www.live2d.com/eula/live2d-free-material-license-agreement_en.html",
+      "terms_url": "https://www.live2d.com/en/learn/sample/",
+      "preview": "https://cdn.jsdelivr.net/gh/Live2D/CubismWebSamples@develop/Samples/Resources/Mao/Mao.2048/texture_00.png",
+      "dest_folder": "mao",
+      "source": {
+        "type": "github_dir",
+        "repo": "Live2D/CubismWebSamples",
+        "path": "Samples/Resources/Mao",
+        "ref": "develop"
+      }
+    },
+    {
+      "id": "live2d-mark",
+      "name": "Mark",
+      "author": "Live2D Inc.",
+      "description": "Official Cubism SDK sample model.",
+      "license": "Live2D Free Material License",
+      "license_url": "https://www.live2d.com/eula/live2d-free-material-license-agreement_en.html",
+      "terms_url": "https://www.live2d.com/en/learn/sample/",
+      "preview": "https://cdn.jsdelivr.net/gh/Live2D/CubismWebSamples@develop/Samples/Resources/Mark/Mark.2048/texture_00.png",
+      "dest_folder": "mark",
+      "source": {
+        "type": "github_dir",
+        "repo": "Live2D/CubismWebSamples",
+        "path": "Samples/Resources/Mark",
+        "ref": "develop"
+      }
+    },
+    {
+      "id": "live2d-natori",
+      "name": "Natori",
+      "author": "Live2D Inc.",
+      "description": "Official Cubism SDK sample model.",
+      "license": "Live2D Free Material License",
+      "license_url": "https://www.live2d.com/eula/live2d-free-material-license-agreement_en.html",
+      "terms_url": "https://www.live2d.com/en/learn/sample/",
+      "preview": "https://cdn.jsdelivr.net/gh/Live2D/CubismWebSamples@develop/Samples/Resources/Natori/Natori.2048/texture_00.png",
+      "dest_folder": "natori",
+      "source": {
+        "type": "github_dir",
+        "repo": "Live2D/CubismWebSamples",
+        "path": "Samples/Resources/Natori",
+        "ref": "develop"
+      }
+    },
+    {
+      "id": "live2d-rice",
+      "name": "Rice",
+      "author": "Live2D Inc.",
+      "description": "Official Cubism SDK sample model.",
+      "license": "Live2D Free Material License",
+      "license_url": "https://www.live2d.com/eula/live2d-free-material-license-agreement_en.html",
+      "terms_url": "https://www.live2d.com/en/learn/sample/",
+      "preview": "https://cdn.jsdelivr.net/gh/Live2D/CubismWebSamples@develop/Samples/Resources/Rice/Rice.2048/texture_00.png",
+      "dest_folder": "rice",
+      "source": {
+        "type": "github_dir",
+        "repo": "Live2D/CubismWebSamples",
+        "path": "Samples/Resources/Rice",
+        "ref": "develop"
+      }
+    },
+    {
+      "id": "live2d-wanko",
+      "name": "Wanko",
+      "author": "Live2D Inc.",
+      "description": "Official Cubism SDK sample model.",
+      "license": "Live2D Free Material License",
+      "license_url": "https://www.live2d.com/eula/live2d-free-material-license-agreement_en.html",
+      "terms_url": "https://www.live2d.com/en/learn/sample/",
+      "preview": "https://cdn.jsdelivr.net/gh/Live2D/CubismWebSamples@develop/Samples/Resources/Wanko/Wanko.2048/texture_00.png",
+      "dest_folder": "wanko",
+      "source": {
+        "type": "github_dir",
+        "repo": "Live2D/CubismWebSamples",
+        "path": "Samples/Resources/Wanko",
+        "ref": "develop"
+      }
+    },
+    {
+      "id": "live2d-ren",
+      "name": "Ren",
+      "author": "Live2D Inc.",
+      "description": "Official Cubism SDK sample model.",
+      "license": "Live2D Free Material License",
+      "license_url": "https://www.live2d.com/eula/live2d-free-material-license-agreement_en.html",
+      "terms_url": "https://www.live2d.com/en/learn/sample/",
+      "preview": "https://cdn.jsdelivr.net/gh/Live2D/CubismWebSamples@develop/Samples/Resources/Ren/Ren.2048/texture_00.png",
+      "dest_folder": "ren",
+      "source": {
+        "type": "github_dir",
+        "repo": "Live2D/CubismWebSamples",
+        "path": "Samples/Resources/Ren",
+        "ref": "develop"
+      }
+    }
+  ]
+}

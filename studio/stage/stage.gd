@@ -5,10 +5,13 @@ const GROUP_NAME = "system:stage"
 const VtObject = preload("res://lib/vtobject.gd")
 const VtModel = preload("res://lib/model/vt_model.gd")
 const VtItem = preload("res://lib/items/vt_item.gd")
+const Serializers = preload("res://lib/utils/serializers.gd")
 
 const INDEX_RANGE = 30
 
 var active_model: VtModel
+var _pending_items: Array = []
+var _restoring_items: bool = false
 @onready var canvas = %ModelLayer
 @onready var capture_viewport = %SubViewport
 var _last_viewport_size := Vector2.ZERO
@@ -92,11 +95,14 @@ func spawn_model(model: VtModel):
 			if i.pinned_to != null:
 				remove_item(i, false)
 
-	# TODO if model had items pinned to it, load them in as well
 	apply_lighting()
 	model_changed.emit(active_model)
 	if prev_model != null:
 		prev_model.queue_free()
+	if not _pending_items.is_empty():
+		var items: Array = _pending_items
+		_pending_items = []
+		await _restore_items(items)
 
 func set_lighting(color: Color, intensity: float) -> void:
 	lighting_color = color
@@ -189,6 +195,7 @@ func clear_items(group_name: StringName = &"*"):
 				remove_item(i)
 
 func load_settings(data):
+	_pending_items = data.get("items", [])
 	if "active_model" in data:
 		var mm = get_tree().get_first_node_in_group("system:model")
 		var model = mm.make_model(data["active_model"])
@@ -200,7 +207,80 @@ func load_settings(data):
 func save_settings(data):
 	if active_model != null and active_model.modelmeta != null:
 		data["active_model"] = active_model.modelmeta.id
+	data["items"] = _serialize_items()
 	# window.transparent is owned by camera_panel (Bg.visible is the inverse)
+
+func _serialize_items() -> Array:
+	var out: Array = []
+	for child in canvas.get_children():
+		if not (child is VtItem):
+			continue
+		var item: VtItem = child
+		var entry := {
+			"path": item.path,
+			"position": Serializers.Vec2Serializer.to_json(item.position),
+			"scale": item.scale.x,
+			"rotation": item.rotation_degrees,
+			"pinnable": item.pinnable,
+			"pinned_to": item.pinned_to.name if item.pinned_to != null else "",
+			"sort_order": item.sort_order,
+			"group_name": String(item.group_name),
+			"locked": item.locked,
+		}
+		if item.item_type == VtItem.ItemType.ANIMATED and item.render is AnimatedSprite2D:
+			var frames: SpriteFrames = item.render.sprite_frames
+			if frames != null:
+				entry["fps"] = item.render.speed_scale * frames.get_animation_speed("default")
+		out.append(entry)
+	return out
+
+func _restore_items(items: Array) -> void:
+	if items.is_empty() or active_model == null:
+		return
+	_restoring_items = true
+	ItemManager.refresh_assets()
+	var ordered: Array = items.duplicate()
+	ordered.sort_custom(
+		func (a, b):
+			return int(a.get("sort_order", 0)) < int(b.get("sort_order", 0))
+	)
+	for entry in ordered:
+		if not (entry is Dictionary):
+			continue
+		var path := String(entry.get("path", ""))
+		if path.is_empty():
+			continue
+		var item: VtItem = await ItemManager.create_item(path)
+		if item == null:
+			push_warning("Unable to restore item: %s" % path)
+			continue
+		item.scale = Vector2.ONE * float(entry.get("scale", 1.0))
+		item.rotation_degrees = float(entry.get("rotation", 0.0))
+		item.position = Serializers.Vec2Serializer.from_json(
+			entry.get("position", {}),
+			get_viewport().get_visible_rect().get_center()
+		)
+		item.pinnable = bool(entry.get("pinnable", false))
+		item.locked = bool(entry.get("locked", false))
+		item.sort_order = int(entry.get("sort_order", 0))
+		var group := String(entry.get("group_name", ""))
+		if not group.is_empty():
+			item.group_name = StringName(group)
+		if item.item_type == VtItem.ItemType.ANIMATED and item.render is AnimatedSprite2D:
+			var frames: SpriteFrames = item.render.sprite_frames
+			if frames != null and entry.has("fps"):
+				var base_fps := frames.get_animation_speed("default")
+				if base_fps > 0.0:
+					item.render.speed_scale = float(entry["fps"]) / base_fps
+		spawn_item(item, false, false)
+		var pin_name := String(entry.get("pinned_to", ""))
+		if not pin_name.is_empty():
+			for mesh in active_model.get_meshes():
+				if mesh.name == pin_name:
+					item.pinned_to = mesh
+					item.pin_changed.emit(mesh)
+					break
+	_restoring_items = false
 	
 func _ready() -> void:
 	_last_viewport_size = Vector2(capture_viewport.size)

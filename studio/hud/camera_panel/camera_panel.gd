@@ -2,6 +2,7 @@ extends "res://studio/hud/side_panel.gd"
 
 const Tracker = preload("res://lib/tracking/tracker.gd")
 const TrackingSystem = preload("res://lib/tracking/tracking_system.gd")
+const CpuFeatures = preload("res://lib/utils/cpu_features.gd")
 
 signal update_bg_color(color: Color)
 
@@ -26,6 +27,12 @@ func _ready() -> void:
 	
 	face_trackers.add_item("VTubeStudio (iOS/Android)")
 	face_trackers.set_item_metadata(face_trackers.item_count - 1, preload("res://lib/tracking/camera/vts/vts_tracker.gd"))
+
+	# MediaPipe's pip wheel is AVX-only and SIGILLs otherwise. Webcam
+	# tracking on those CPUs is OpenSeeFace.
+	if CpuFeatures.has_avx():
+		face_trackers.add_item("Mediapipe (Experimental)")
+		face_trackers.set_item_metadata(face_trackers.item_count - 1, preload("res://lib/tracking/camera/mediapipe/mp_tracker.gd"))
 	
 	for tracker in tracking_system.get_children():
 		var config = tracker.create_config()
@@ -119,17 +126,21 @@ func _on_transparency_toggle_toggled(toggled_on: bool) -> void:
 
 func load_settings(data: Dictionary):
 	transparency_toggle.button_pressed = data.get("window", {}).get("transparent", false)
-	face_trackers.select(data.get("camera", {}).get("tracking", 0))
+	var saved_tracker := int(data.get("camera", {}).get("tracking", 0))
+	if saved_tracker < 0 or saved_tracker >= face_trackers.item_count:
+		saved_tracker = 0
+	face_trackers.select(saved_tracker)
 	fps_option.select(data.get("window", {}).get("fps", 0))
 	_on_fps_value_item_selected(fps_option.get_selected_id())
 	var palette_id := String(data.get("ui", {}).get("palette", ThemeManager.DEFAULT_PALETTE))
 	ThemeManager.apply_palette(palette_id)
 	_select_ui_theme_option(ThemeManager.active_palette_id)
 	if tracking_system:
-		tracking_system.activate_tracker(
-			face_trackers.get_selected_metadata().new()
-		)
+		var tracker_script: Variant = face_trackers.get_selected_metadata()
+		if tracker_script != null:
+			tracking_system.activate_tracker(tracker_script.new())
 		mic_toggle.button_pressed = data.get("microphone", true)
+		_apply_osf_smoothing(data)
 	
 func save_settings(data: Dictionary):
 	var w = data.get("window", {})
@@ -137,12 +148,29 @@ func save_settings(data: Dictionary):
 	w["fps"] = fps_option.get_selected_id()
 	var c = data.get("camera", {})
 	c["tracking"] = face_trackers.get_selected_id()
+	c["osf_smoothing"] = _osf_smoothing_value()
 	var ui = data.get("ui", {})
 	ui["palette"] = ThemeManager.active_palette_id
 	data["window"] = w
 	data["camera"] = c
 	data["ui"] = ui
 	data["microphone"] = mic_toggle.button_pressed
+
+func _osf_smoothing_value() -> float:
+	if tracking_system == null:
+		return 0.45
+	var tracker = tracking_system.get_node_or_null("FaceTracker")
+	if tracker != null and "tracking_smoothing" in tracker:
+		return float(tracker.tracking_smoothing)
+	return float(Preferences.get_setting("camera.osf_smoothing", 0.45))
+
+func _apply_osf_smoothing(data: Dictionary) -> void:
+	if tracking_system == null:
+		return
+	var tracker = tracking_system.get_node_or_null("FaceTracker")
+	if tracker == null or not ("tracking_smoothing" in tracker):
+		return
+	tracker.tracking_smoothing = float(data.get("camera", {}).get("osf_smoothing", 0.45))
 
 func _on_fps_value_item_selected(index: int) -> void:
 	match index:

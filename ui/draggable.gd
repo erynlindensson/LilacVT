@@ -143,5 +143,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 	
 	if dirty:
-		transform_updated.emit(global_position, scale, rotation_degrees, free_offset, free_rotation)
+		notify_transform_updated()
 		_update_rect()
+
+func notify_transform_updated() -> void:
+	transform_updated.emit(global_position, scale, rotation_degrees, free_offset, free_rotation)

@@ -1,0 +1,51 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://studio/hud/model_panel/live2d_browser/catalog_row.gd" id="1_row"]
+
+[node name="CatalogRow" type="PanelContainer"]
+custom_minimum_size = Vector2(0, 88)
+size_flags_horizontal = 3
+theme_type_variation = &"ButtonPanel"
+script = ExtResource("1_row")
+
+[node name="Layout" type="HBoxContainer" parent="."]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Preview" type="TextureRect" parent="Layout"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(72, 72)
+layout_mode = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Info" type="VBoxContainer" parent="Layout"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Name" type="Label" parent="Layout/Info"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"BoldLabel"
+theme_override_font_sizes/font_size = 18
+text = "Model"
+
+[node name="Author" type="Label" parent="Layout/Info"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Author"
+
+[node name="License" type="Label" parent="Layout/Info"]
+unique_name_in_owner = true
+layout_mode = 2
+autowrap_mode = 2
+text = "License"
+
+[node name="Get" type="Button" parent="Layout"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(96, 36)
+layout_mode = 2
+size_flags_vertical = 4
+text = "Get"
+
+[connection signal="pressed" from="Layout/Get" to="." method="_on_get_pressed"]

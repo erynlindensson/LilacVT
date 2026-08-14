@@ -42,6 +42,8 @@ var rest_anchors: Dictionary = {}
 # movement transforms
 var movement_enabled: bool = false
 var movement_scale: Vector3 = Vector3.ZERO
+## Viewport fraction applied at movement_scale 1.0 for FacePosition X/Y.
+const FACE_MOVE_SPAN := 0.35
 
 var render_msaa: Viewport.MSAA = Viewport.MSAA.MSAA_4X
 var render_anisotropic: Viewport.AnisotropicFiltering = Viewport.AnisotropicFiltering.ANISOTROPY_4X
@@ -83,6 +85,22 @@ func _load_model():
 @abstract func get_idle_animation_player() -> AnimationPlayer
 @abstract func get_animation_player() -> AnimationPlayer
 @abstract func tracking_updated(tracking_data: Dictionary, _delta: float)
+
+func face_movement_from_tracking(tracking_data: Dictionary) -> Vector3:
+	if not movement_enabled:
+		return Vector3.ZERO
+	return Vector3(
+		Registry.signed_ilerp_input(float(tracking_data.get("FacePositionX", 0.0)), "FacePositionX"),
+		Registry.signed_ilerp_input(float(tracking_data.get("FacePositionY", 0.0)), "FacePositionY"),
+		Registry.signed_ilerp_input(float(tracking_data.get("FacePositionZ", 0.0)), "FacePositionZ"),
+	) * movement_scale
+
+func face_movement_offset(movement: Vector3) -> Vector2:
+	if locked:
+		return Vector2.ZERO
+	var vp := get_viewport_rect().size
+	return Vector2(movement.x, -movement.y) * vp * FACE_MOVE_SPAN
+
 func _adjust_filter():
 	pass
 	
@@ -109,6 +127,16 @@ func load_model_settings(settings: Dictionary):
 		settings.get("transform", {}).get("position", {}),
 		get_viewport_rect().get_center()
 	)
+	var movement: Dictionary = settings.get("movement", {})
+	if not movement.is_empty():
+		movement_enabled = bool(movement.get("enabled", movement_enabled))
+		var scale_data: Variant = movement.get("scale", {})
+		if scale_data is Dictionary:
+			movement_scale = Vector3(
+				float(scale_data.get("x", movement_scale.x)),
+				float(scale_data.get("y", movement_scale.y)),
+				float(scale_data.get("z", movement_scale.z))
+			)
 	apply_render_quality()
 		
 func save_model_settings(settings: Dictionary):
@@ -124,6 +152,14 @@ func save_model_settings(settings: Dictionary):
 			"position": Serializers.Vec2Serializer.to_json(self.position),
 			"scale": self.scale.x,
 			"rotation": self.rotation_degrees
+		},
+		"movement": {
+			"enabled": movement_enabled,
+			"scale": {
+				"x": movement_scale.x,
+				"y": movement_scale.y,
+				"z": movement_scale.z,
+			},
 		},
 		"graphs": blueprints.reduce(
 			func (acc, b):

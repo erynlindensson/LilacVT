@@ -65,3 +65,25 @@ static func copy_recursive(from: String, to: String) -> Error:
 	if err != OK and not DirAccess.dir_exists_absolute(parent):
 		return err
 	return DirAccess.copy_absolute(src, dst)
+
+## Decode PNG/JPEG/WebP from bytes using magic headers so JPEG is not probed as PNG.
+static func image_from_buffer(body: PackedByteArray) -> Image:
+	if body.size() < 8:
+		return null
+	var img := Image.new()
+	var err := ERR_INVALID_DATA
+	if body[0] == 0x89 and body[1] == 0x50:
+		err = img.load_png_from_buffer(body)
+	elif body[0] == 0xFF and body[1] == 0xD8:
+		err = img.load_jpg_from_buffer(body)
+	elif body.size() >= 12 and body[8] == 0x57 and body[9] == 0x45:
+		err = img.load_webp_from_buffer(body)
+	else:
+		err = img.load_png_from_buffer(body)
+		if err != OK:
+			err = img.load_jpg_from_buffer(body)
+		if err != OK:
+			err = img.load_webp_from_buffer(body)
+	if err != OK:
+		return null
+	return img

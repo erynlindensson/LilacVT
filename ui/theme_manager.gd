@@ -74,9 +74,21 @@ const PALETTES := {
 		"panel_dark": Color(0.655, 0.690, 0.741, 1.0),
 		"shade": Color(0.365, 0.400, 0.455, 1.0),
 	},
+	"godot_dark": {
+		"name": "Godot Dark",
+		"ink": Color(0.875, 0.878, 0.890, 1.0),
+		"panel": Color(0.224, 0.239, 0.275, 1.0),
+		"panel_mid": Color(0.188, 0.204, 0.239, 1.0),
+		"hover": Color(0.310, 0.333, 0.384, 1.0),
+		"cream": Color(0.157, 0.173, 0.204, 1.0),
+		"subpanel": Color(0.173, 0.188, 0.224, 1.0),
+		"muted": Color(0.620, 0.643, 0.690, 1.0),
+		"panel_dark": Color(0.133, 0.149, 0.180, 1.0),
+		"shade": Color(0.102, 0.114, 0.141, 1.0),
+	},
 }
 
-const PALETTE_ORDER: PackedStringArray = ["lilac", "classic", "rose", "slate"]
+const PALETTE_ORDER: PackedStringArray = ["lilac", "classic", "rose", "slate", "godot_dark"]
 
 var active_palette_id: String = DEFAULT_PALETTE
 var ink: Color = CLASSIC.ink

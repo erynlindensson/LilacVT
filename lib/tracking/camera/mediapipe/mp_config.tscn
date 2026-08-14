@@ -1,0 +1,89 @@
+[gd_scene format=3 uid="uid://bmediapipeconfig1"]
+
+[ext_resource type="Script" path="res://lib/tracking/camera/mediapipe/mp_config.gd" id="1_mpcfg"]
+
+[node name="MpConfig" type="VBoxContainer"]
+offset_left = 8.0
+offset_top = 8.0
+offset_right = 215.0
+offset_bottom = 280.0
+size_flags_horizontal = 3
+script = ExtResource("1_mpcfg")
+
+[node name="Hint" type="Label" parent="."]
+layout_mode = 2
+autowrap_mode = 3
+text = "Experimental webcam tracking via Google MediaPipe Face Landmarker (requires AVX). First start installs a local Python venv."
+
+[node name="StatusRow" type="HBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="FpsCounter" type="Label" parent="StatusRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"ValueLabel"
+text = "FPS: 0"
+
+[node name="ActiveIndicator" type="Label" parent="StatusRow"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"ValueLabel"
+text = "Off"
+horizontal_alignment = 2
+
+[node name="BlinkSync" type="CheckButton" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+text = "Link Eye Blinking"
+
+[node name="SmoothingRow" type="HBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="SmoothingLabel" type="Label" parent="SmoothingRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Tracking Smoothing"
+
+[node name="Smoothing" type="SpinBox" parent="SmoothingRow"]
+unique_name_in_owner = true
+layout_mode = 2
+max_value = 100.0
+step = 1.0
+value = 35.0
+alignment = 2
+suffix = "%"
+
+[node name="CameraRow" type="HBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="CameraLabel" type="Label" parent="CameraRow"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Camera ID"
+
+[node name="CameraId" type="SpinBox" parent="CameraRow"]
+unique_name_in_owner = true
+layout_mode = 2
+max_value = 16.0
+alignment = 2
+
+[node name="Buttons" type="HBoxContainer" parent="."]
+layout_mode = 2
+
+[node name="Connect" type="Button" parent="Buttons"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Start Tracking"
+
+[node name="Disconnect" type="Button" parent="Buttons"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Stop Tracking"
+
+[connection signal="toggled" from="BlinkSync" to="." method="_on_blink_sync_toggled"]
+[connection signal="value_changed" from="SmoothingRow/Smoothing" to="." method="_on_smoothing_value_changed"]
+[connection signal="pressed" from="Buttons/Connect" to="." method="_on_connect_pressed"]
+[connection signal="pressed" from="Buttons/Disconnect" to="." method="_on_disconnect_pressed"]

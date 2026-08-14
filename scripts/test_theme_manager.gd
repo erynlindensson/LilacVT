@@ -14,7 +14,7 @@ func _run() -> void:
 		await process_frame
 
 	assert(tm.DEFAULT_PALETTE == "lilac")
-	assert(tm.get_palette_ids().size() == 4)
+	assert(tm.get_palette_ids().size() == 5)
 
 	tm.apply_palette("lilac")
 	assert(tm.active_palette_id == "lilac")
@@ -30,6 +30,8 @@ func _run() -> void:
 	assert(tm.active_palette_id == "rose")
 	tm.apply_palette("slate")
 	assert(tm.active_palette_id == "slate")
+	tm.apply_palette("godot_dark")
+	assert(tm.active_palette_id == "godot_dark")
 
 	var theme: Theme = tm._active_theme
 	assert(theme != null)

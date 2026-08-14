@@ -11,13 +11,17 @@ const _FACE_BONES: PackedStringArray = [
 ]
 
 ## pose_name → { bone_name: Vector3(euler_degrees) }  — deltas from rest
+## After humanoid retarget: +X on upper arm lowers from T-pose, -X raises;
+## elbow bend is local Z (left negative / right positive). Unused arms hang down.
 const _POSE_EULERS: Dictionary = {
 	"Neutral": {},
-	# Raise right arm; slight elbow bend for a wave silhouette.
+	# Right arm up and out; left hangs so it does not stay in T-pose.
 	"Wave": {
-		"RightUpperArm": Vector3(-100.0, 0.0, 0.0),
-		"RightLowerArm": Vector3(-35.0, 0.0, 0.0),
+		"RightUpperArm": Vector3(-60.0, 0.0, 0.0),
+		"RightLowerArm": Vector3(0.0, 0.0, 35.0),
 		"RightHand": Vector3(0.0, 0.0, -15.0),
+		"LeftUpperArm": Vector3(50.0, 0.0, 0.0),
+		"LeftLowerArm": Vector3(0.0, 0.0, -10.0),
 	},
 	# Both arms down from T-pose; elbow bend is local Z (mirrored), not X —
 	# X flexion swings the forearm behind the torso on Godot-retargeted VRMs.
@@ -37,19 +41,20 @@ const _POSE_EULERS: Dictionary = {
 		"RightLowerArm": Vector3(0.0, 0.0, 95.0),
 		"RightHand": Vector3(0.0, 0.0, -15.0),
 	},
+	# Right hand to chin; left hangs. +X lowers the upper arm (not -X, which raises).
 	"Thinking": {
-		"RightUpperArm": Vector3(-45.0, 15.0, -20.0),
-		"RightLowerArm": Vector3(0.0, 0.0, 90.0),
+		"RightUpperArm": Vector3(55.0, 45.0, -40.0),
+		"RightLowerArm": Vector3(0.0, 25.0, 115.0),
 		"RightHand": Vector3(10.0, 0.0, -25.0),
-		"LeftUpperArm": Vector3(40.0, 0.0, 0.0),
-		"LeftLowerArm": Vector3(0.0, 0.0, 25.0),
+		"LeftUpperArm": Vector3(55.0, 0.0, 0.0),
+		"LeftLowerArm": Vector3(0.0, 0.0, -15.0),
 	},
 	"Point": {
-		"RightUpperArm": Vector3(10.0, -25.0, -40.0),
+		"RightUpperArm": Vector3(10.0, 10.0, -70.0),
 		"RightLowerArm": Vector3(0.0, 0.0, 15.0),
 		"RightHand": Vector3(0.0, 0.0, -5.0),
-		"LeftUpperArm": Vector3(45.0, 0.0, 0.0),
-		"LeftLowerArm": Vector3(0.0, 0.0, 25.0),
+		"LeftUpperArm": Vector3(50.0, 0.0, 0.0),
+		"LeftLowerArm": Vector3(0.0, 0.0, -10.0),
 	},
 }
 

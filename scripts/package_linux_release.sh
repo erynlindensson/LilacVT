@@ -60,6 +60,20 @@ rsync -a \
 	"${OSF_SRC}/" "${STAGE}/thirdparty/openseeface/"
 cp -a "${ROOT}/scripts/setup_openseeface.sh" "${STAGE}/scripts/"
 chmod +x "${STAGE}/scripts/setup_openseeface.sh"
+if [[ -f "${ROOT}/scripts/setup_mediapipe.sh" ]]; then
+	cp -a "${ROOT}/scripts/setup_mediapipe.sh" "${STAGE}/scripts/"
+	chmod +x "${STAGE}/scripts/setup_mediapipe.sh"
+fi
+if [[ -f "${ROOT}/thirdparty/mediapipe/facetracker.py" ]]; then
+	rsync -a \
+		--exclude='.venv/' \
+		--exclude='__pycache__/' \
+		--exclude='*.pyc' \
+		--exclude='models/*.task' \
+		--exclude='models/*.onnx' \
+		--exclude='models/lbfmodel.yaml' \
+		"${ROOT}/thirdparty/mediapipe/" "${STAGE}/thirdparty/mediapipe/"
+fi
 
 if [[ -d "${ROOT}/license" ]]; then
 	cp -a "${ROOT}/license/"*.md "${STAGE}/licenses/" 2>/dev/null || true
@@ -87,6 +101,13 @@ OpenSeeFace:
     local Python venv (one-time; needs network for pip packages).
   - You can also run it manually: ./scripts/setup_openseeface.sh
   - Then choose OpenSeeFace in Camera settings and press Start Tracking.
+
+MediaPipe (experimental):
+  - Shown in Camera settings only when the CPU has AVX (MediaPipe wheels
+    are AVX-only and SIGILL otherwise). Use OpenSeeFace on other CPUs.
+  - Sources are included under thirdparty/mediapipe/
+  - First Start Tracking (or ./scripts/setup_mediapipe.sh) creates a local
+    Python venv and downloads the Face Landmarker model (needs network).
 
 Notes:
   - Transparent background is off by default; enable it in Camera → Application Settings.
