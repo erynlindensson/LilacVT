@@ -85,7 +85,7 @@ cp -a "${OSF_SRC}/LICENSE" "${STAGE}/licenses/openseeface/" 2>/dev/null || true
 cp -a "${OSF_SRC}/Licenses/." "${STAGE}/licenses/openseeface/" 2>/dev/null || true
 
 cat > "${STAGE}/README.txt" <<EOF
-OpenVT Lilac ${VERSION} — Linux x86_64
+LilacVT ${VERSION} — Linux x86_64
 
 Run:
   ./openvt.x86_64
@@ -97,7 +97,7 @@ Requirements:
 
 OpenSeeFace:
   - Sources and models are included under thirdparty/openseeface/
-  - On first launch, OpenVT runs scripts/setup_openseeface.sh to create a
+  - On first launch, LilacVT runs scripts/setup_openseeface.sh to create a
     local Python venv (one-time; needs network for pip packages).
   - You can also run it manually: ./scripts/setup_openseeface.sh
   - Then choose OpenSeeFace in Camera settings and press Start Tracking.
