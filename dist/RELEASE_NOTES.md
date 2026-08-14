@@ -1,22 +1,15 @@
-# OpenVT Lilac v0.1.6 — Linux x86_64
+# LilacVT v0.1.7 — Linux x86_64
 
-- Artifact: `open-vt-0.1.6-linux-x86_64.tar.gz`
-- SHA256: `ba869cdd9126cf40e2495d07f66aa00ca2368a64c197921c191e7720156fabc6`
+- Artifact: `lilacvt-0.1.7-linux-x86_64.tar.gz`
+- SHA256: `76453210397446175b9c3062de904cce4fac446f39363f3930d233f9517e9ec8`
 
 ## Changes
 
-- **Open File…** — import and spawn a local `.model3.json` or `.vrm` from the model panel.
-- **Free Live2D catalog** — in-app browser for official sample models.
-- **Face movement** — FacePosition X/Y/Z drives Live2D offset/scale and VRM stage motion when movement is enabled.
-- **Persist items** — spawned accessories restore across launches.
-- **OSF smoothing** — 1€ filter slider in OpenSeeFace camera settings.
-- **Live2D physics** — strength / mode / per-group controls in Model Settings.
-- **Godot Dark** — fifth UI palette alongside Lilac, Classic, Rose, and Slate.
-- **Mediapipe (Experimental)** — Face Landmarker on AVX CPUs only; hidden otherwise (wheels SIGILL without AVX). Use OpenSeeFace on this class of CPU.
-- **Blueprint tabs** — double-click a tab to rename, enable, or delete.
-- **VTS colors** — deserialize `{r,g,b,a}` dictionaries from vtube.json.
-- **VRM quality** — antialiasing, anisotropic filtering, and optional transparent SSAA (from post-0.1.5 main).
-- Carries forward v0.1.5 themes, SpinBox arrows, Live2D poses, and OpenSeeFace first-launch setup.
+- **Renamed to LilacVT** — independent fork of [open-vt](https://github.com/erodozer/open-vt) with its own roadmap; GitHub repo is [erynlindensson/LilacVT](https://github.com/erynlindensson/LilacVT).
+- **New splash** — LilacVT wordmark on boot.
+- **Live2D physics** — rebuilt Ayagami `.so` with Cubism-faithful global strength and per-group pendulum controls (0 disables a group). Missing physics files no longer panic.
+- **MIT LICENSE** — dual copyright for upstream open-vt and LilacVT modifications.
+- Carries forward v0.1.6 studio work (Open File, catalogs, face movement, item persistence, OSF smoothing, MediaPipe-on-AVX, themes).
 
 ## Requirements for tracking
 
@@ -26,11 +19,8 @@
 
 ## Smoke
 
+- [ ] Window title / splash say LilacVT
 - [ ] Fresh extract → first run creates `thirdparty/openseeface/.venv` if needed
-- [ ] OpenSeeFace Start Tracking moves the model; smoothing slider damps jitter
+- [ ] Live2D Model Settings physics groups change bounce independently
 - [ ] Mediapipe option is absent on no-AVX CPUs, present on AVX
-- [ ] Open File… loads a Live2D or VRM and spawns it
-- [ ] Spawned item still present after restart
-- [ ] Face movement unlocked → head X/Y shifts the model; lock keeps it planted
-- [ ] UI Theme includes Godot Dark
 - [ ] `Ayagami blend modes registered` on boot
