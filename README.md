@@ -17,7 +17,7 @@
 
 This project is a downstream fork **based on, but distinct from, [open-vt](https://github.com/erodozer/open-vt)**. While it inherits core foundational concepts from the original codebase, **LilacVT** operates as an independent project with its own roadmap, features, and development standards.
 
-Latest packaged build: **[v0.1.6](https://github.com/erynlindensson/LilacVT/releases/tag/v0.1.6)**.
+Latest packaged build: **[v0.1.7](https://github.com/erynlindensson/LilacVT/releases/tag/v0.1.7)**.
 
 Please star and support [upstream open-vt](https://github.com/erodozer/open-vt) by **[erodozer](https://github.com/erodozer)** — the Godot Live2D studio, VTS-oriented workflows, and Linux-first design started there.
 
@@ -58,7 +58,7 @@ Builds currently need a custom Godot with Ayagami blend-mode patches (`godot4-ay
 ./scripts/setup_openseeface.sh   # OpenSeeFace venv + deps
 ./scripts/setup_mediapipe.sh     # optional: MediaPipe venv (AVX CPUs)
 godot4-ayagami --headless --path . --export-release linux bin/linux/openvt.x86_64
-VERSION=0.1.6 ./scripts/package_linux_release.sh
+VERSION=0.1.7 ./scripts/package_linux_release.sh
 ```
 
 Tracking needs `python3` and `python3-venv`. First OpenSeeFace start uses the network for pip packages.
