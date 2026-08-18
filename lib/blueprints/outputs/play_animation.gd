@@ -10,6 +10,7 @@ func _ready() -> void:
 
 	if input.get_item_count() == 0:
 		queue_free()
+	ensure_slot_colors()
 	
 func get_type() -> StringName:
 	return &"animation"

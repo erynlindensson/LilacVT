@@ -8,10 +8,6 @@ const VtAction = preload("res://lib/blueprints/vt_action.gd")
 const Blueprint = preload("res://lib/blueprints/blueprint.gd")
 const Stage = preload("res://studio/stage/stage.gd")
 
-const GRAPH_NODES_DIR = "res://studio/action_engine/graph"
-static var INPUTS_DIR = GRAPH_NODES_DIR.path_join("inputs")
-static var OUTPUTS_DIR = GRAPH_NODES_DIR.path_join("outputs")
-
 @onready var screen_controller = get_tree().get_first_node_in_group("system:hotkey")
 
 var active_model: VtModel
@@ -35,6 +31,8 @@ func _ready() -> void:
 	
 	for g in active_model.blueprints:
 		g.reparent(%Profiles)
+		if g.has_method(&"refresh_wire_colors"):
+			g.refresh_wire_colors.call_deferred()
 	
 	self.title = "Model Bindings [%s]" % active_model.display_name
 	

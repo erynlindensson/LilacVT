@@ -58,6 +58,20 @@ var graph_elements: Dictionary[String, GraphNode] = {}
 func _ready() -> void:
 	add_valid_connection_type(VtAction.SlotType.VECTOR, VtAction.SlotType.NUMERIC)
 
+func refresh_wire_colors() -> void:
+	for node in graph_elements.values():
+		if node is VtAction:
+			node.ensure_slot_colors()
+	for conn in get_connection_list():
+		set_connection_activity(
+			conn.from_node, conn.from_port, conn.to_node, conn.to_port, 0.0
+		)
+	queue_redraw()
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_VISIBILITY_CHANGED and visible:
+		refresh_wire_colors.call_deferred()
+
 func _on_connection_request(from_node: StringName, from_port: int, to_node: StringName, to_port: int) -> void:
 	if not is_node_ready():
 		await self.ready
@@ -86,6 +100,7 @@ func _on_connection_request(from_node: StringName, from_port: int, to_node: Stri
 		
 	connect_node(from_node, from_port, to_node, to_port)
 	n2.bind(s1, n1)
+	refresh_wire_colors.call_deferred()
 
 func _on_disconnection_request(from_node: StringName, from_port: int, to_node: StringName, to_port: int) -> void:
 	disconnect_node(from_node, from_port, to_node, to_port)

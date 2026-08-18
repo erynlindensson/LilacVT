@@ -22,6 +22,7 @@ func _ready() -> void:
 		%Active.button_pressed = active
 		if expression == name:
 			input.selected = input.item_count - 1
+	ensure_slot_colors()
 
 func get_type() -> StringName:
 	return &"expression"

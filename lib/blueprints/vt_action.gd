@@ -10,6 +10,14 @@ enum SlotType {
 	VECTOR
 }
 
+const SLOT_COLORS := {
+	SlotType.TRIGGER: Color(0.95, 0.55, 0.15, 1.0),
+	SlotType.NUMERIC: Color(0.35, 0.78, 0.42, 1.0),
+	SlotType.STRING: Color(0.62, 0.45, 0.92, 1.0),
+	SlotType.BOOL: Color(0.92, 0.82, 0.25, 1.0),
+	SlotType.VECTOR: Color(0.35, 0.62, 0.95, 1.0),
+}
+
 ## reference to the bound model is directly available to all VtActions
 var model: VtModel:
 	set = set_model
@@ -24,6 +32,31 @@ func set_model(m: VtModel):
 # Slot index != Port Index, slots are the children while ports are enabled children
 var _slot_to_input: Dictionary[StringName, int] = {}
 var _slot_to_output: Dictionary[StringName, int] = {}
+
+static func color_for_type(slot_type: int) -> Color:
+	return SLOT_COLORS.get(slot_type, Color.WHITE)
+
+func apply_slot_color(slot_index: int, side: StringName = &"both") -> void:
+	if side == &"both" or side == &"left":
+		if is_slot_enabled_left(slot_index):
+			set_slot_color_left(slot_index, color_for_type(get_slot_type_left(slot_index)))
+	if side == &"both" or side == &"right":
+		if is_slot_enabled_right(slot_index):
+			set_slot_color_right(slot_index, color_for_type(get_slot_type_right(slot_index)))
+
+func apply_all_slot_colors() -> void:
+	for slot_index in get_child_count():
+		apply_slot_color(slot_index)
+
+func ensure_slot_colors() -> void:
+	apply_all_slot_colors()
+
+func _ready() -> void:
+	ensure_slot_colors()
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_VISIBILITY_CHANGED and is_visible_in_tree():
+		ensure_slot_colors()
 
 @abstract func get_type() -> StringName
 

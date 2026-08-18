@@ -56,12 +56,13 @@ func _deserialize(graph: Blueprint, model: VtModel, data: Dictionary):
 			if src_port == -1:
 				push_error("invalid slot in graph connection (node: {0}, src: {1})".format([from_node.name, src_slot]))
 				continue
-			if src_port == -1:
+			if dst_port == -1:
 				push_error("invalid slot in graph connection (node: {0}, dst: {1})".format([to_node.name, dst_slot]))
 				continue
 			graph._on_connection_request.call_deferred(
 				from_node.name, src_port,
 				to_node.name, dst_port
 			)
-			
+
+	graph.refresh_wire_colors.call_deferred()
 	graph.process_mode = PROCESS_MODE_INHERIT if data.get("enabled", true) else PROCESS_MODE_DISABLED

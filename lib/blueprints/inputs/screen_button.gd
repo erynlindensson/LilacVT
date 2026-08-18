@@ -6,6 +6,7 @@ extends "../vt_action.gd"
 func _ready() -> void:
 	var controller = get_tree().get_first_node_in_group("system:hotkey")
 	controller.pressed.connect(_on_press)
+	ensure_slot_colors()
 	
 func get_type() -> StringName:
 	return &"screen_button"

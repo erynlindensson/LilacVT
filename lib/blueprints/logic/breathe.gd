@@ -59,4 +59,4 @@ func get_value(_slot):
 
 func _process(_delta: float) -> void:
 	%Value.value = progress
-	slot_updated.emit(1)
+	slot_updated.emit(get_output_port_by_name(&"value"))
