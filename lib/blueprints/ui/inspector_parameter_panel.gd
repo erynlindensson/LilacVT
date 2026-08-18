@@ -11,7 +11,7 @@ static func build(action: VtAction, parent: VBoxContainer) -> void:
 	var list: BlueprintParameterList = action.get_parameter_list() if action.has_method(
 		&"get_parameter_list"
 	) else null
-	var rows := _collect_rows(action)
+	var rows := _collect_rows(action, list)
 	if rows.is_empty():
 		return
 
@@ -84,24 +84,17 @@ static func build(action: VtAction, parent: VBoxContainer) -> void:
 			details.visible = source_row.is_details_visible()
 			block.add_child(details)
 
-			var min_spin := SpinBox.new()
-			min_spin.step = 0.01
-			min_spin.editable = true
-			min_spin.suffix = "min"
-			min_spin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			# Read-only mirrors of the node's own row. min/max come from the model
+			# or the tracking Registry and are not user-editable remap bounds;
+			# current is a live readout driven by the graph each frame.
+			var min_spin := _make_readout("min")
 			details.add_child(min_spin)
 
-			var max_spin := SpinBox.new()
-			max_spin.step = 0.01
-			max_spin.editable = true
-			max_spin.suffix = "max"
-			max_spin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			var max_spin := _make_readout("max")
 			details.add_child(max_spin)
 
-			var cur_spin := SpinBox.new()
-			cur_spin.step = 0.01
-			cur_spin.editable = true
-			cur_spin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			var cur_spin := _make_readout("")
+			cur_spin.tooltip_text = "Live value"
 			details.add_child(cur_spin)
 
 			Helpers.link_spinboxes(min_spin, source_row.min_value)
@@ -118,10 +111,24 @@ static func build(action: VtAction, parent: VBoxContainer) -> void:
 	if list != null:
 		_sync_panel_visibility(parent, list)
 
-static func _collect_rows(action: VtAction) -> Array[ParameterRow]:
+static func _make_readout(suffix: String) -> SpinBox:
+	var spin := SpinBox.new()
+	spin.step = 0.01
+	spin.editable = false
+	spin.allow_greater = true
+	spin.allow_lesser = true
+	spin.suffix = suffix
+	spin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	return spin
+
+## Parameters hidden through the model's modifiers have no port and are hidden
+## in the node itself, so they must not reappear in the inspector.
+static func _collect_rows(action: VtAction, list: BlueprintParameterList) -> Array[ParameterRow]:
 	var rows: Array[ParameterRow] = []
 	for child in action.get_children():
 		if child is ParameterRow:
+			if list != null and not list.is_row_enabled(child.parameter_name):
+				continue
 			rows.append(child)
 	return rows
 
@@ -146,14 +153,22 @@ static func _sync_panel_visibility(parent: VBoxContainer, list: BlueprintParamet
 			child.visible = matches and not collapsed
 		elif child is Button and child.has_meta("group_name"):
 			var group_name: String = child.get_meta("group_name")
-			var collapsed: bool = list.collapsed_groups.get(group_name, true)
-			var has_match := false
-			if filter.is_empty():
-				has_match = true
-			else:
-				for row in list._group_rows.get(group_name, []):
+			var visible_rows := _enabled_rows_in_group(list, group_name)
+			var has_match := filter.is_empty()
+			if not has_match:
+				for row in visible_rows:
 					if row.parameter_name.to_lower().contains(filter):
 						has_match = true
 						break
-			child.visible = has_match or filter.is_empty()
-			_refresh_header_text(child, group_name, list._group_rows.get(group_name, []).size(), list)
+			child.visible = has_match
+			_refresh_header_text(child, group_name, visible_rows.size(), list)
+
+static func _enabled_rows_in_group(
+	list: BlueprintParameterList,
+	group_name: String
+) -> Array:
+	var out: Array = []
+	for row in list._group_rows.get(group_name, []):
+		if list.is_row_enabled(row.parameter_name):
+			out.append(row)
+	return out

@@ -326,12 +326,15 @@ func _on_connection_request(from_node: StringName, from_port: int, to_node: Stri
 func _on_disconnection_request(from_node: StringName, from_port: int, to_node: StringName, to_port: int) -> void:
 	disconnect_node(from_node, from_port, to_node, to_port)
 
-	var source: VtAction = get_node(NodePath(from_node))
-	var target: VtAction = get_node(NodePath(to_node))
+	var source: VtAction = get_node_or_null(NodePath(from_node))
+	var target: VtAction = get_node_or_null(NodePath(to_node))
 	if target != null:
-		var field = target.get_input_port_slot(to_port)
-		target.unbind(field, source)
-		target.reset_value(field)
+		# use our own port map rather than GraphNode.get_input_port_slot, whose
+		# internal cache is only populated once the graph has been made visible
+		var field = target.get_input_slot_by_port(to_port)
+		if field != -1:
+			target.unbind(field, source)
+			target.reset_value(field)
 
 func _on_child_entered_tree(node: Node) -> void:
 	if node is GraphFrame:
@@ -394,8 +397,25 @@ func _on_action(from_port: int, node: VtAction):
 
 func _on_delete_nodes_request(nodes: Array[StringName]) -> void:
 	for i in nodes:
-		var n = get_node(NodePath(i))
+		var n = get_node_or_null(NodePath(i))
+		if n == null:
+			continue
+		if n is VtAction:
+			_disconnect_all(n)
+		elif n is GraphFrame:
+			for element_name in get_attached_nodes_of_frame(n.name):
+				detach_graph_element_from_frame(element_name)
 		n.queue_free()
+
+## Tears down every connection touching a node so bound targets release it.
+## Freeing the node alone drops the wires without ever calling unbind.
+func _disconnect_all(node: VtAction) -> void:
+	for conn in get_connection_list():
+		if conn.from_node != node.name and conn.to_node != node.name:
+			continue
+		_on_disconnection_request(
+			conn.from_node, conn.from_port, conn.to_node, conn.to_port
+		)
 		
 func serialize() -> Dictionary:
 	var nodes = []

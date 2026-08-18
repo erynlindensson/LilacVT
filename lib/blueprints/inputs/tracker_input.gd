@@ -95,10 +95,12 @@ func get_parameter_list() -> BlueprintParameterList:
 	return _list
 
 func deserialize(data: Dictionary) -> void:
+	# kind must be applied first: its setter rebuilds the slots, which replaces
+	# _list and would discard any UI state loaded beforehand.
+	kind = data.get("type", kind)
 	if _list != null:
 		_list.load_ui_state(data)
 		_list.finalize_layout()
-	kind = data.get("type", kind)
 
 func _on_parameters_updated(parameters, _delta) -> void:
 	for p in parameters:

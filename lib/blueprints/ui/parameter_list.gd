@@ -21,6 +21,7 @@ var _group_rows: Dictionary = {}
 var _rows: Dictionary = {}
 var _row_enabled: Dictionary = {}
 var _chrome: VBoxContainer
+var _ui_state_loaded: bool = false
 
 func _init(action: VtAction) -> void:
 	host = action
@@ -37,6 +38,7 @@ func clear() -> void:
 	_row_enabled.clear()
 	filter_edit = null
 	_chrome = null
+	_ui_state_loaded = false
 
 func build_filter_row() -> void:
 	_chrome = VBoxContainer.new()
@@ -133,16 +135,27 @@ func set_group_collapsed(group_name: String, collapsed: bool) -> void:
 	collapsed_groups[group_name] = collapsed
 	_sync_visibility()
 
+## Applies the "collapse everything except connected groups" default.
+## Skipped once an explicit saved state has been restored, otherwise the
+## deferred call that seeds defaults would clobber the loaded collapse state.
 func set_default_collapse(unless_groups: Array = []) -> void:
+	if _ui_state_loaded:
+		return
 	for group_name in _group_rows:
 		if group_name in unless_groups:
 			collapsed_groups[group_name] = false
 		elif group_name not in collapsed_groups:
 			collapsed_groups[group_name] = true
 
+## Only genuinely collapsed groups are persisted; load_ui_state treats every
+## listed name as collapsed, so writing all keys would collapse expanded groups.
 func get_ui_state() -> Dictionary:
+	var collapsed: Array[String] = []
+	for group_name in collapsed_groups:
+		if collapsed_groups[group_name]:
+			collapsed.append(String(group_name))
 	return {
-		"collapsed_groups": collapsed_groups.keys(),
+		"collapsed_groups": collapsed,
 		"filter": filter_text,
 	}
 
@@ -150,9 +163,13 @@ func load_ui_state(data: Dictionary) -> void:
 	collapsed_groups.clear()
 	for group_name in data.get("collapsed_groups", []):
 		collapsed_groups[String(group_name)] = true
+	for group_name in _group_rows:
+		if group_name not in collapsed_groups:
+			collapsed_groups[group_name] = false
 	filter_text = String(data.get("filter", ""))
 	if filter_edit != null:
 		filter_edit.text = filter_text
+	_ui_state_loaded = true
 
 func _on_group_header_pressed(group_name: String) -> void:
 	var collapsed: bool = collapsed_groups.get(group_name, true)
@@ -162,6 +179,9 @@ func _on_group_header_pressed(group_name: String) -> void:
 func _on_filter_changed(text: String) -> void:
 	filter_text = text
 	_sync_visibility()
+
+func is_row_enabled(param: String) -> bool:
+	return _row_enabled.get(param, true)
 
 func set_row_enabled(param: String, enabled: bool) -> void:
 	_row_enabled[param] = enabled
