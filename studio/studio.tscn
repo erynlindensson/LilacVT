@@ -74,8 +74,7 @@ follow_viewport_enabled = true
 [node name="HUD" parent="Interface" unique_id=831684815 instance=ExtResource("10_o8nmr")]
 unique_name_in_owner = true
 
-[node name="Terms" parent="Interface" unique_id=2098445916 instance=ExtResource("14_ylsn8")]
-visible = false
+[node name="Terms" parent="." unique_id=2098445916 instance=ExtResource("14_ylsn8")]
 
 [node name="Splash" type="CanvasLayer" parent="." unique_id=131694603]
 unique_name_in_owner = true
