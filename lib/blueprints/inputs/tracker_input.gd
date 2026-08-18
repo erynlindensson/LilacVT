@@ -91,6 +91,9 @@ func serialize() -> Dictionary:
 		data.merge(_list.get_ui_state())
 	return data
 
+func get_parameter_list() -> BlueprintParameterList:
+	return _list
+
 func deserialize(data: Dictionary) -> void:
 	if _list != null:
 		_list.load_ui_state(data)

@@ -42,6 +42,8 @@ func _deserialize(graph: Blueprint, model: VtModel, data: Dictionary):
 		
 		n.deserialize(i.get("parameters", {}))
 		n.position_offset = Serializers.Vec2Serializer.from_json(i.get("position"), Vector2.ZERO)
+	
+	graph.deserialize_groups(data.get("groups", []))
 		
 	for i in data.get("bindings", []):
 		if i.src in graph.graph_elements and i.dst in graph.graph_elements:

@@ -155,6 +155,9 @@ func serialize() -> Dictionary:
 		return {}
 	return _list.get_ui_state()
 
+func get_parameter_list() -> BlueprintParameterList:
+	return _list
+
 func deserialize(data: Dictionary) -> void:
 	if _list != null:
 		_list.load_ui_state(data)

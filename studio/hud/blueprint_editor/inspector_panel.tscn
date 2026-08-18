@@ -1,0 +1,47 @@
+[gd_scene load_steps=3 format=3 uid="uid://c8blueprintinspector"]
+
+[ext_resource type="Script" path="res://studio/hud/blueprint_editor/inspector_panel.gd" id="1_insp"]
+[ext_resource type="Texture2D" path="res://ui/icons/xmark.svg" id="2_close"]
+
+[node name="InspectorPanel" type="PanelContainer"]
+custom_minimum_size = Vector2(0, 0)
+size_flags_horizontal = 0
+size_flags_vertical = 3
+theme_type_variation = &"InsetPanelContainer"
+script = ExtResource("1_insp")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="HeaderRow" type="HBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="HeaderLabel" type="Label" parent="VBoxContainer/HeaderRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Inspector"
+
+[node name="CloseButton" type="Button" parent="VBoxContainer/HeaderRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(28, 28)
+layout_mode = 2
+focus_mode = 0
+tooltip_text = "Close Inspector"
+icon = ExtResource("2_close")
+flat = true
+expand_icon = true
+
+[node name="ContentScroll" type="ScrollContainer" parent="VBoxContainer"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="FieldsVBox" type="VBoxContainer" parent="VBoxContainer/ContentScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6

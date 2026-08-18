@@ -4,6 +4,9 @@
 [ext_resource type="PackedScene" uid="uid://dgmc2ouh0pqwh" path="res://studio/hud/blueprint_editor/palette.tscn" id="2_gl8b5"]
 [ext_resource type="Texture2D" uid="uid://bdb8qf25rndd4" path="res://ui/icons/plus.svg" id="2_ira4j"]
 [ext_resource type="Texture2D" uid="uid://dvoxi8gjlmu1m" path="res://ui/icons/trash-can.svg" id="3_n0myf"]
+[ext_resource type="Texture2D" path="res://ui/icons/square.svg" id="4_group"]
+[ext_resource type="Texture2D" path="res://ui/icons/arrows-to-circle.svg" id="5_group_sel"]
+[ext_resource type="PackedScene" path="res://studio/hud/blueprint_editor/inspector_panel.tscn" id="6_insp"]
 
 [node name="BlueprintEditor" type="Window" unique_id=1090118760 groups=["persist:model"]]
 disable_3d = true
@@ -48,6 +51,28 @@ popup/item_1/id = 1
 popup/item_2/text = "Auto-Setup"
 popup/item_2/id = 2
 
+[node name="AddGroup" type="Button" parent="PanelContainer/HBoxContainer/Control" unique_id=1624265803]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(36, 32)
+layout_mode = 2
+tooltip_text = "Add Group"
+focus_mode = 0
+icon = ExtResource("4_group")
+flat = false
+icon_alignment = 1
+expand_icon = true
+
+[node name="GroupSelection" type="Button" parent="PanelContainer/HBoxContainer/Control" unique_id=1624265804]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(36, 32)
+layout_mode = 2
+tooltip_text = "Group Selection"
+focus_mode = 0
+icon = ExtResource("5_group_sel")
+flat = false
+icon_alignment = 1
+expand_icon = true
+
 [node name="Palette" parent="PanelContainer/HBoxContainer/Control" unique_id=76400097 instance=ExtResource("2_gl8b5")]
 unique_name_in_owner = true
 layout_mode = 2
@@ -59,6 +84,10 @@ layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 theme_override_constants/separation = 12
+
+[node name="InspectorPanel" parent="PanelContainer/HBoxContainer" instance=ExtResource("6_insp")]
+unique_name_in_owner = true
+layout_mode = 2
 
 [node name="PanelContainer" type="PanelContainer" parent="PanelContainer/HBoxContainer/VBoxContainer" unique_id=1442164832]
 layout_mode = 2
@@ -156,6 +185,8 @@ focus_mode = 0
 flat = true
 
 [connection signal="close_requested" from="." to="." method="_on_close_requested"]
+[connection signal="pressed" from="PanelContainer/HBoxContainer/Control/AddGroup" to="." method="_on_add_group_pressed"]
+[connection signal="pressed" from="PanelContainer/HBoxContainer/Control/GroupSelection" to="." method="_on_group_selection_pressed"]
 [connection signal="create_node" from="PanelContainer/HBoxContainer/Control/Palette" to="." method="_on_palette_create_node"]
 [connection signal="tab_clicked" from="PanelContainer/HBoxContainer/VBoxContainer/PanelContainer/Profiles" to="." method="_on_profiles_tab_clicked"]
 [connection signal="tab_selected" from="PanelContainer/HBoxContainer/VBoxContainer/PanelContainer/Profiles" to="." method="_on_profiles_tab_selected"]

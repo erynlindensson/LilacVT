@@ -34,6 +34,8 @@ func _ready() -> void:
 		if g.has_method(&"refresh_wire_colors"):
 			g.refresh_wire_colors.call_deferred()
 	
+	_bind_inspector_to_active_graph()
+	
 	self.title = "Model Bindings [%s]" % active_model.display_name
 	
 	# make sure to clean up the window when models are removed
@@ -57,6 +59,7 @@ func _ready() -> void:
 			for graph in graphs:
 				%Profiles.add_child(graph, true)
 			%Profiles.current_tab = %Profiles.get_tab_count() - 1
+			_bind_inspector_to_active_graph()
 	)
 
 	%EditPopup.add_button("Delete", true, "Delete")
@@ -98,11 +101,26 @@ func _on_delete_profile_pressed() -> void:
 func _on_palette_create_node(action: VtAction) -> void:
 	active_graph.spawn_action(action, active_model)
 
+func _on_add_group_pressed() -> void:
+	if active_graph:
+		active_graph.spawn_frame()
+
+func _on_group_selection_pressed() -> void:
+	if active_graph:
+		active_graph.group_selected_actions()
+
 func _on_close_requested() -> void:
 	queue_free()
 
 func _on_profiles_tab_selected(_tab: int) -> void:
 	_sync_profile_fields()
+	_bind_inspector_to_active_graph()
+
+func _bind_inspector_to_active_graph() -> void:
+	if active_graph:
+		%InspectorPanel.bind_graph(active_graph)
+	else:
+		%InspectorPanel.hide_panel()
 
 func _sync_profile_fields() -> void:
 	var current_tab = %Profiles.get_current_tab_control()
