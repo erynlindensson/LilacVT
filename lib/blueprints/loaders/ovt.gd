@@ -20,10 +20,15 @@ func load_graph(model: VtModel) -> Array:
 		graph.name = profile
 		add_child(graph)
 		_deserialize(graph, model, graphs[profile])
-		if graph.get_child_count() > 0:
-			valid_graphs.append(graph)
+		var keep := graph.get_child_count() > 0
 		remove_child(graph)
-		
+		if keep:
+			valid_graphs.append(graph)
+		else:
+			# nothing adopts an empty profile, so it has to be freed here or the
+			# detached GraphEdit leaks for the lifetime of the process
+			graph.queue_free()
+
 	return valid_graphs
 
 func _deserialize(graph: Blueprint, model: VtModel, data: Dictionary):
