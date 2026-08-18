@@ -48,7 +48,37 @@ Native Linux, open development, pixel-art filtering, and popout controls from up
 
 Most of the VTuber ecosystem uses Unity. LilacVT is **Godot 4** (GDScript first), with vendored **godot-vrm** / **MToon**, Ayagami for Live2D, and a local OpenSeeFace tree.
 
-Builds currently need a custom Godot with Ayagami blend-mode patches (`godot4-ayagami`). Prefer Godot built-ins and low dependency overhead.
+Builds need a patched Godot (`godot4-ayagami`). Prefer Godot built-ins and low dependency overhead.
+
+### The patched engine
+
+There is no Godot fork to clone. The engine is **stock Godot at a tagged release plus one
+patch vendored in this repo**, at `thirdparty/ayagami/patches/`. The patch adds custom
+canvas blend modes that Live2D needs; without it the `BlendRegistry` autoload fails to
+parse, because `RenderingServer.register_blend_mode()` does not exist in stock Godot, and
+the project will not start.
+
+```bash
+git clone --depth 1 --branch 4.7.1-stable https://github.com/godotengine/godot.git
+cd godot
+git apply /path/to/LilacVT/thirdparty/ayagami/patches/custom_blend_modes-4_7_1.patch
+scons platform=linuxbsd target=editor -j"$(nproc)"          # editor: runs the project
+scons platform=linuxbsd target=template_release -j"$(nproc)" # template: exports releases
+```
+
+Put the editor binary on your PATH as `godot4-ayagami`, and copy the export template into
+this repo (the export preset points at it, and `bin/` is gitignored):
+
+```bash
+mkdir -p bin/templates
+cp godot/bin/godot.linuxbsd.template_release.x86_64 bin/templates/
+```
+
+The preset deliberately uses this in-repo path rather than an installed export template.
+If the file is missing the export fails loudly, instead of silently falling back to a
+stock template and shipping a build with broken Live2D blending.
+
+### Building and packaging
 
 ```bash
 ./build_dependencies.sh
@@ -59,6 +89,17 @@ VERSION=0.1.7 ./scripts/package_linux_release.sh
 ```
 
 Tracking needs `python3` and `python3-venv`. First OpenSeeFace start uses the network for pip packages.
+
+### Tests
+
+```bash
+./scripts/run_tests.sh                       # uses godot4-ayagami from PATH
+GODOT=/path/to/godot ./scripts/run_tests.sh  # or point at a specific build
+```
+
+The runner needs the patched engine for the same reason the app does. A few integration
+tests are excluded because they require local fixtures or network; they are listed with
+their reasons at the top of the script. CI runs this same runner.
 
 ---
 

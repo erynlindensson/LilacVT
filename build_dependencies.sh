@@ -3,7 +3,10 @@
 PROJ_ROOT=$(pwd)
 
 # scons is needed for cpp extensions
-pyenv local 3.13
+# pyenv is used for local dev; CI runners provide python directly
+if command -v pyenv >/dev/null 2>&1; then
+	pyenv local 3.13
+fi
 pip install pipx scons --quiet
 TARGET="${target:-x86_64-unknown-linux-gnu}"
 	

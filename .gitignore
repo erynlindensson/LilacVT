@@ -8,6 +8,10 @@
 bin/*
 license/*.md
 
+# release artifacts (RELEASE_NOTES.md is tracked)
+dist/*
+!dist/RELEASE_NOTES.md
+
 # development project samples
 Live2DModels/
 VrmModels/

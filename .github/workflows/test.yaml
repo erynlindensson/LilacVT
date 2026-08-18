@@ -1,0 +1,121 @@
+name: Tests
+
+# Runs entirely within this repository (erynlindensson/LilacVT).
+# It contacts no other project's pipeline and uses no secrets.
+
+on:
+  push:
+    branches: [main, fix, feature]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Upstream Godot tag the blend-mode patch is written against. Bumping this
+  # means a matching patch under thirdparty/ayagami/patches/.
+  GODOT_TAG: "4.7.1-stable"
+  GODOT_PATCH: "thirdparty/ayagami/patches/custom_blend_modes-4_7_1.patch"
+  GODOT_BIN: "godot.linuxbsd.editor.x86_64"
+
+jobs:
+  engine:
+    name: Patched Godot
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # only the submodules the build actually needs; gd_cubism is unused
+          # since the switch to Ayagami
+          submodules: false
+
+      - name: Fetch ayagami submodule (for the engine patch)
+        run: git submodule update --init --depth 1 thirdparty/ayagami
+
+      - name: Restore cached engine
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: engine
+          key: godot-${{ env.GODOT_TAG }}-${{ hashFiles('thirdparty/ayagami/patches/*.patch') }}
+
+      - name: Install engine build dependencies
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential scons pkg-config \
+            libx11-dev libxcursor-dev libxinerama-dev libxi-dev libxrandr-dev \
+            libgl1-mesa-dev libglu1-mesa-dev \
+            libasound2-dev libpulse-dev libudev-dev libwayland-dev
+
+      - name: Build Godot with the Ayagami blend-mode patch
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          git clone --depth 1 --branch "${GODOT_TAG}" \
+            https://github.com/godotengine/godot.git godot-src
+          git -C godot-src apply --verbose "${GITHUB_WORKSPACE}/${GODOT_PATCH}"
+          scons -C godot-src platform=linuxbsd target=editor "-j$(nproc)"
+          mkdir -p engine
+          cp "godot-src/bin/${GODOT_BIN}" "engine/${GODOT_BIN}"
+
+      - name: Upload engine
+        uses: actions/upload-artifact@v4
+        with:
+          name: godot-engine
+          path: engine/${{ env.GODOT_BIN }}
+          retention-days: 7
+
+  test:
+    name: Headless suite
+    needs: engine
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      - name: Fetch submodules needed by build_dependencies.sh
+        run: |
+          git submodule update --init --depth 1 \
+            thirdparty/ayagami \
+            thirdparty/godot-vrm \
+            thirdparty/gd-virtualcamera \
+            thirdparty/godot-keylogger
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: godot-engine
+          path: engine
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Compute GDExtension cache key
+        id: deps
+        run: echo "key=$(git submodule status | sha256sum | cut -c1-16)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore cached GDExtensions
+        id: addons-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            addons
+            license
+          key: addons-${{ steps.deps.outputs.key }}-${{ hashFiles('build_dependencies.sh') }}
+
+      - name: Build GDExtensions
+        if: steps.addons-cache.outputs.cache-hit != 'true'
+        run: ./build_dependencies.sh
+
+      - name: Run test suite
+        run: |
+          chmod +x "engine/${GODOT_BIN}"
+          GODOT="$PWD/engine/${GODOT_BIN}" ./scripts/run_tests.sh
