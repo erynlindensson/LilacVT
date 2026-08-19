@@ -85,9 +85,7 @@ jobs:
         run: |
           git submodule update --init --depth 1 \
             thirdparty/ayagami \
-            thirdparty/godot-vrm \
-            thirdparty/gd-virtualcamera \
-            thirdparty/godot-keylogger
+            thirdparty/godot-vrm
 
       - uses: actions/download-artifact@v4
         with:

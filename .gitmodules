@@ -1,12 +1,6 @@
 [submodule "thirdparty/gd_cubism"]
 	path = thirdparty/gd_cubism
 	url = https://github.com/erodozer/gd_cubism
-[submodule "thirdparty/godot-keylogger"]
-	path = thirdparty/godot-keylogger
-	url = https://github.com/erodozer/godot-keylogger
-[submodule "thirdparty/gd-virtualcamera"]
-	path = thirdparty/gd-virtualcamera
-	url = https://github.com/erodozer/gd-virtualcamera.git
 [submodule "thirdparty/ayagami"]
 	path = thirdparty/ayagami
 	url = https://github.com/erynlindensson/ayagami-gd.git

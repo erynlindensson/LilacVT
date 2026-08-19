@@ -46,7 +46,7 @@ copy_release_so() {
 }
 copy_release_so "${ROOT}/addons/ayagami/lib/libayagami_gd.release.so" "libayagami_gd.release.so"
 copy_release_so "${ROOT}/addons/virtualcamera/lib/libgd_virtualcamera.release.so" "libgd_virtualcamera.release.so"
-copy_release_so "${ROOT}/addons/keylogger/lib/libgd_keylogger.release.so" "libgd_keylogger.release.so"
+copy_release_so "${ROOT}/addons/global_input/lib/libgd_global_input.release.so" "libgd_global_input.release.so"
 
 chmod +x "${STAGE}/openvt.x86_64"
 
@@ -118,10 +118,10 @@ EOF
 
 # Ensure .gdextension-relative names work if export used res://addons/.../lib paths
 # Godot often places libs beside the executable with the basename from the .gdextension entry.
-mkdir -p "${STAGE}/addons/ayagami/lib" "${STAGE}/addons/virtualcamera/lib" "${STAGE}/addons/keylogger/lib"
+mkdir -p "${STAGE}/addons/ayagami/lib" "${STAGE}/addons/virtualcamera/lib" "${STAGE}/addons/global_input/lib"
 [[ -f "${STAGE}/libayagami_gd.release.so" ]] && cp -a "${STAGE}/libayagami_gd.release.so" "${STAGE}/addons/ayagami/lib/"
 [[ -f "${STAGE}/libgd_virtualcamera.release.so" ]] && cp -a "${STAGE}/libgd_virtualcamera.release.so" "${STAGE}/addons/virtualcamera/lib/"
-[[ -f "${STAGE}/libgd_keylogger.release.so" ]] && cp -a "${STAGE}/libgd_keylogger.release.so" "${STAGE}/addons/keylogger/lib/"
+[[ -f "${STAGE}/libgd_global_input.release.so" ]] && cp -a "${STAGE}/libgd_global_input.release.so" "${STAGE}/addons/global_input/lib/"
 
 # Also copy any nested export layout Godot produced under bin/linux
 if [[ -d "${SRC_BIN}/addons" ]]; then

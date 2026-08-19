@@ -57,25 +57,24 @@ build_virtualcamera () {
 	cd $PROJ_ROOT
 }
 
-build_keylogger() {
-	echo -e "\n#### Preparing godot-keylogger\n\n"
+build_global_input() {
+	echo -e "\n#### Preparing gd-global-input\n\n"
 
-	WORKDIR=$PROJ_ROOT/thirdparty/godot-keylogger
+	WORKDIR=$PROJ_ROOT/native/gd-global-input
 	ADDONDIR=$PROJ_ROOT/addons
 
 	mkdir -p $ADDONDIR
-	
-	cd $WORKDIR
-	
-	make package
-	cp -r $WORKDIR/addons/keylogger $ADDONDIR
 
-	cp LICENSE.md $PROJ_ROOT/license/LICENSE.keylogger.md
-	cp README.md $ADDONDIR/keylogger/README.md
-	echo "*" > $ADDONDIR/keylogger/.gitignore
-	
+	cd $WORKDIR
+
+	make package
+	cp -r $WORKDIR/addons/global_input $ADDONDIR
+
+	cp LICENSE $PROJ_ROOT/license/LICENSE.globalinput.md
+	echo "*" > $ADDONDIR/global_input/.gitignore
+
 	# log completion
-	find $ADDONDIR -type f
+	find $ADDONDIR/global_input -type f
 
 	cd $PROJ_ROOT
 }
@@ -93,4 +92,4 @@ git submodule update --init --recursive
 build_ayagami
 build_vrm
 build_virtualcamera
-build_keylogger
+build_global_input

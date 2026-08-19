@@ -48,6 +48,21 @@ Native Linux, open development, pixel-art filtering, and popout controls from up
 
 Most of the VTuber ecosystem uses Unity. LilacVT is **Godot 4** (GDScript first), with vendored **godot-vrm** / **MToon**, Ayagami for Live2D, and a local OpenSeeFace tree.
 
+### Native extensions
+
+Two GDExtensions live in this repo rather than as submodules:
+
+* `native/gd-global-input` — polls global (unfocused) keyboard state so hotkeys fire
+  while you are in another application, which Godot's own `Input` cannot do. Written
+  for this project; MIT. Linux/X11 only; see the Wayland note below.
+* `thirdparty/gd-virtualcamera` — vendored V4L2 loopback output, originally released
+  into the public domain under the Unlicense.
+
+**Wayland:** global key state is read through X11 `QueryKeymap`. Under a pure Wayland
+session there is no portable way to observe keys sent to other applications, so hotkeys
+are inert unless the app runs via XWayland. `GlobalInput.is_available()` reports whether
+a backend was found, and the app logs a warning at startup when it was not.
+
 Builds need a patched Godot (`godot4-ayagami`). Prefer Godot built-ins and low dependency overhead.
 
 ### The patched engine

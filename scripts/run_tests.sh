@@ -46,6 +46,7 @@ SCENE_TESTS=(
 	test_blueprint_ui_state
 	test_graph_frames
 	test_blueprint_editor_smoke
+	test_global_input
 )
 
 # Excluded from automation: these need local fixtures or network and are red on
