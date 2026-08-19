@@ -1,4 +1,4 @@
-name: Tests
+name: CI
 
 # Runs entirely within this repository (erynlindensson/LilacVT).
 # It contacts no other project's pipeline and uses no secrets.

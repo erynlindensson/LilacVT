@@ -1,0 +1,240 @@
+name: CD
+
+# Packaging & distribution pipeline for erynlindensson/LilacVT.
+# Runs entirely within this repository — never contacts erodozer/origin.
+#
+# Behavior by trigger:
+#   push to feature  → preview tarball uploaded as workflow artifact
+#   push to main     → tarball uploaded as workflow artifact
+#   tag v*           → tarball + GitHub Release (draft)
+#   workflow_dispatch → tarball uploaded as workflow artifact
+
+on:
+  push:
+    branches: [main, feature]
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write          # needed for creating GitHub Releases on tags
+
+concurrency:
+  group: cd-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GODOT_TAG: "4.7.1-stable"
+  GODOT_PATCH: "thirdparty/ayagami/patches/custom_blend_modes-4_7_1.patch"
+  GODOT_BIN: "godot.linuxbsd.editor.x86_64"
+  # Template binary is checked into the repo at this path for headless export
+  GODOT_TEMPLATE: "bin/templates/godot.linuxbsd.template_release.x86_64"
+
+jobs:
+  # ──────────────────────────────────────────────────────────────────────
+  # 1. Build or restore the patched Godot editor (same cache as CI)
+  # ──────────────────────────────────────────────────────────────────────
+  engine:
+    name: Patched Godot
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      - name: Fetch ayagami submodule (for the engine patch)
+        run: git submodule update --init --depth 1 thirdparty/ayagami
+
+      - name: Restore cached engine
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: engine
+          key: godot-${{ env.GODOT_TAG }}-${{ hashFiles('thirdparty/ayagami/patches/*.patch') }}
+
+      - name: Install engine build dependencies
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential scons pkg-config \
+            libx11-dev libxcursor-dev libxinerama-dev libxi-dev libxrandr-dev \
+            libgl1-mesa-dev libglu1-mesa-dev \
+            libasound2-dev libpulse-dev libudev-dev libwayland-dev
+
+      - name: Build Godot with the Ayagami blend-mode patch
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          git clone --depth 1 --branch "${GODOT_TAG}" \
+            https://github.com/godotengine/godot.git godot-src
+          git -C godot-src apply --verbose "${GITHUB_WORKSPACE}/${GODOT_PATCH}"
+          scons -C godot-src platform=linuxbsd target=editor "-j$(nproc)"
+          mkdir -p engine
+          cp "godot-src/bin/${GODOT_BIN}" "engine/${GODOT_BIN}"
+
+      # Also build the export template for headless --export-release
+      - name: Build export template
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: |
+          scons -C godot-src platform=linuxbsd target=template_release "-j$(nproc)"
+          cp "godot-src/bin/godot.linuxbsd.template_release.x86_64" \
+             "engine/godot.linuxbsd.template_release.x86_64"
+
+      - name: Upload engine
+        uses: actions/upload-artifact@v4
+        with:
+          name: godot-engine-cd
+          path: engine/
+          retention-days: 7
+
+  # ──────────────────────────────────────────────────────────────────────
+  # 2. Build GDExtensions & export the Linux binary
+  # ──────────────────────────────────────────────────────────────────────
+  export:
+    name: Export Linux binary
+    needs: engine
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      - name: Fetch submodules needed by build_dependencies.sh
+        run: |
+          git submodule update --init --depth 1 \
+            thirdparty/ayagami \
+            thirdparty/godot-vrm \
+            thirdparty/openseeface
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: godot-engine-cd
+          path: engine
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Compute GDExtension cache key
+        id: deps
+        run: echo "key=$(git submodule status | sha256sum | cut -c1-16)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore cached GDExtensions
+        id: addons-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            addons
+            license
+          key: addons-${{ steps.deps.outputs.key }}-${{ hashFiles('build_dependencies.sh') }}
+
+      - name: Build GDExtensions
+        if: steps.addons-cache.outputs.cache-hit != 'true'
+        run: ./build_dependencies.sh
+
+      - name: Place export template
+        run: |
+          mkdir -p bin/templates
+          cp engine/godot.linuxbsd.template_release.x86_64 \
+             "${GODOT_TEMPLATE}"
+          chmod +x "${GODOT_TEMPLATE}"
+
+      - name: Export Linux release
+        run: |
+          chmod +x "engine/${GODOT_BIN}"
+          mkdir -p bin/linux
+          "engine/${GODOT_BIN}" --headless --path . \
+            --export-release linux bin/linux/openvt.x86_64
+
+      - name: Upload exported binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-export
+          path: bin/linux/
+          retention-days: 7
+
+  # ──────────────────────────────────────────────────────────────────────
+  # 3. Package the distributable tarball
+  # ──────────────────────────────────────────────────────────────────────
+  package:
+    name: Package tarball
+    needs: export
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: false
+
+      - name: Fetch OpenSeeFace + MediaPipe sources
+        run: |
+          git submodule update --init --depth 1 \
+            thirdparty/openseeface
+          # MediaPipe is optional; don't fail if the submodule doesn't exist
+          git submodule update --init --depth 1 \
+            thirdparty/mediapipe 2>/dev/null || true
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: linux-export
+          path: bin/linux
+
+      # Restore addons so package_linux_release.sh can find the .so files
+      - name: Compute GDExtension cache key
+        id: deps
+        run: echo "key=$(git submodule status | sha256sum | cut -c1-16)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore cached GDExtensions
+        uses: actions/cache@v4
+        with:
+          path: |
+            addons
+            license
+          key: addons-${{ steps.deps.outputs.key }}-${{ hashFiles('build_dependencies.sh') }}
+
+      - name: Determine version
+        id: version
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/v* ]]; then
+            echo "version=${GITHUB_REF#refs/tags/v}" >> "$GITHUB_OUTPUT"
+          else
+            # Use short SHA for non-tag builds
+            echo "version=dev-$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Run package_linux_release.sh
+        run: |
+          chmod +x bin/linux/openvt.x86_64
+          VERSION="${{ steps.version.outputs.version }}" \
+            ./scripts/package_linux_release.sh
+
+      - name: Upload tarball
+        uses: actions/upload-artifact@v4
+        with:
+          name: lilacvt-linux-tarball
+          path: |
+            dist/*.tar.gz
+            dist/*.sha256
+          retention-days: 7
+
+  # ──────────────────────────────────────────────────────────────────────
+  # 4. Create a GitHub Release (only on version tags)
+  # ──────────────────────────────────────────────────────────────────────
+  release:
+    name: GitHub Release
+    needs: package
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: lilacvt-linux-tarball
+          path: dist
+
+      - name: Create draft release
+        uses: softprops/action-gh-release@v2
+        with:
+          draft: true
+          generate_release_notes: true
+          files: |
+            dist/*.tar.gz
+            dist/*.sha256
