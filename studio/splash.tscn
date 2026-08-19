@@ -1,0 +1,91 @@
+[gd_scene format=3 uid="uid://c8q4vkm57lq01"]
+
+[ext_resource type="Script" path="res://studio/splash.gd" id="1_splash"]
+[ext_resource type="Texture2D" uid="uid://bcqaflbakxadd" path="res://branding/splash.png" id="2_logo"]
+[ext_resource type="Texture2D" uid="uid://d4mqdkit20d64" path="res://branding/godot_logo_large_monochrome_dark.svg" id="3_godot"]
+
+[node name="Splash" type="CanvasLayer"]
+layer = 100
+script = ExtResource("1_splash")
+
+[node name="ColorRect" type="ColorRect" parent="."]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 1)
+
+[node name="Logo" type="TextureRect" parent="ColorRect"]
+custom_minimum_size = Vector2(420, 420)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -210.0
+offset_top = -220.0
+offset_right = 210.0
+offset_bottom = 200.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("2_logo")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Godot Logo" type="TextureRect" parent="ColorRect"]
+self_modulate = Color(1, 1, 1, 0)
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_top = -72.0
+offset_right = 200.0
+grow_vertical = 0
+texture = ExtResource("3_godot")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="LoadingContainer" type="VBoxContainer" parent="ColorRect"]
+custom_minimum_size = Vector2(360, 48)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -180.0
+offset_top = 220.0
+offset_right = 180.0
+offset_bottom = 276.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 6
+
+[node name="ProgressBar" type="ProgressBar" parent="ColorRect/LoadingContainer"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(360, 10)
+layout_mode = 2
+size_flags_vertical = 4
+step = 0.1
+show_percentage = false
+
+[node name="StatusRow" type="HBoxContainer" parent="ColorRect/LoadingContainer"]
+layout_mode = 2
+
+[node name="StatusLabel" type="Label" parent="ColorRect/LoadingContainer/StatusRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.85, 0.82, 0.9, 0.85)
+theme_override_font_sizes/font_size = 12
+text = "Starting LilacVT..."
+
+[node name="PercentLabel" type="Label" parent="ColorRect/LoadingContainer/StatusRow"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(0.71, 0.58, 0.88, 0.95)
+theme_override_font_sizes/font_size = 12
+text = "0%"
+horizontal_alignment = 2

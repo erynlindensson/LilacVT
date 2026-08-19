@@ -16,15 +16,15 @@ compatibility/default_parent_skeleton_in_mesh_instance_3d=true
 
 config/name="LilacVT"
 config/version="0.1.7"
-run/main_scene="res://studio/studio.tscn"
+run/main_scene="res://studio/splash.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
 run/max_fps=60
-boot_splash/bg_color=Color(0, 0, 0, 1)
-boot_splash/stretch_mode=0
-boot_splash/image="uid://bcqaflbakxadd"
 config/icon="uid://do3gvkipu7gp4"
-boot_splash/minimum_display_time=2000
-boot_splash/image.editor_hint=""
+boot_splash/bg_color=Color(0, 0, 0, 1)
+boot_splash/show_image=true
+boot_splash/image="uid://bcqaflbakxadd"
+boot_splash/minimum_display_time=0
+boot_splash/stretch_mode=0
 
 [audio]
 
