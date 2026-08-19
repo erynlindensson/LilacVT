@@ -1,6 +1,9 @@
 extends VBoxContainer
 class_name ParameterRow
 
+signal min_value_changed(param: String, val: float)
+signal max_value_changed(param: String, val: float)
+signal current_value_changed(param: String, val: float)
 signal smoothing_changed(param: String, strength: float)
 
 var parameter_name: String = ""
@@ -11,7 +14,7 @@ var max_value: SpinBox
 var current_value: SpinBox
 var smoothing_value: SpinBox
 
-static func create(param: String, value_range: Vector2, default_value: float):
+static func create(param: String, value_range: Vector2, default_value: float) -> ParameterRow:
 	var row: ParameterRow = load("res://lib/blueprints/ui/parameter_row.gd").new()
 	row.parameter_name = param
 	row.name = param
@@ -43,11 +46,19 @@ func _build(value_range: Vector2, default_value: float) -> void:
 	_details.add_theme_constant_override("separation", 2)
 	add_child(_details)
 
-	min_value = _make_spinbox("min", value_range.x)
+	min_value = _make_editable_spinbox("min", value_range.x)
+	min_value.tooltip_text = "Minimum bound"
+	min_value.value_changed.connect(_on_min_value_changed)
 	_details.add_child(min_value)
-	max_value = _make_spinbox("max", value_range.y)
+
+	max_value = _make_editable_spinbox("max", value_range.y)
+	max_value.tooltip_text = "Maximum bound"
+	max_value.value_changed.connect(_on_max_value_changed)
 	_details.add_child(max_value)
-	current_value = _make_spinbox("", default_value)
+
+	current_value = _make_editable_spinbox("", default_value)
+	current_value.tooltip_text = "Current / manual value"
+	current_value.value_changed.connect(_on_current_value_changed)
 	_details.add_child(current_value)
 
 	smoothing_value = _make_editable_spinbox("% smth", 0.0, 0.0, 100.0, 1.0)
@@ -58,24 +69,19 @@ func _build(value_range: Vector2, default_value: float) -> void:
 
 	set_details_visible(false)
 
-func _make_spinbox(suffix: String, value: float) -> SpinBox:
-	var spin := SpinBox.new()
-	spin.step = 0.01
-	spin.rounded = false
-	spin.allow_greater = true
-	spin.allow_lesser = true
-	spin.value = value
-	spin.suffix = suffix
-	spin.alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	spin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	spin.editable = false
-	return spin
-
-func _make_editable_spinbox(suffix: String, value: float, min_v: float, max_v: float, step_v: float) -> SpinBox:
+func _make_editable_spinbox(
+	suffix: String,
+	value: float,
+	min_v: float = -999999.0,
+	max_v: float = 999999.0,
+	step_v: float = 0.01
+) -> SpinBox:
 	var spin := SpinBox.new()
 	spin.step = step_v
 	spin.min_value = min_v
 	spin.max_value = max_v
+	spin.allow_greater = true
+	spin.allow_lesser = true
 	spin.rounded = false
 	spin.value = value
 	spin.suffix = suffix
@@ -83,6 +89,43 @@ func _make_editable_spinbox(suffix: String, value: float, min_v: float, max_v: f
 	spin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	spin.editable = true
 	return spin
+
+func set_min_value(val: float) -> void:
+	if min_value != null and not is_equal_approx(min_value.value, val):
+		min_value.set_value_no_signal(val)
+
+func get_min_value() -> float:
+	return min_value.value if min_value != null else 0.0
+
+func set_max_value(val: float) -> void:
+	if max_value != null and not is_equal_approx(max_value.value, val):
+		max_value.set_value_no_signal(val)
+
+func get_max_value() -> float:
+	return max_value.value if max_value != null else 1.0
+
+func set_current_value(val: float) -> void:
+	if current_value != null and not is_equal_approx(current_value.value, val):
+		current_value.set_value_no_signal(val)
+
+func get_current_value() -> float:
+	return current_value.value if current_value != null else 0.0
+
+func set_value_range(val_range: Vector2) -> void:
+	set_min_value(val_range.x)
+	set_max_value(val_range.y)
+
+func get_value_range() -> Vector2:
+	return Vector2(get_min_value(), get_max_value())
+
+func _on_min_value_changed(val: float) -> void:
+	min_value_changed.emit(parameter_name, val)
+
+func _on_max_value_changed(val: float) -> void:
+	max_value_changed.emit(parameter_name, val)
+
+func _on_current_value_changed(val: float) -> void:
+	current_value_changed.emit(parameter_name, val)
 
 func set_smoothing_enabled(enabled: bool) -> void:
 	if smoothing_value != null:

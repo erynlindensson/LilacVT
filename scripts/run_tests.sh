@@ -49,6 +49,7 @@ SCENE_TESTS=(
 	test_global_input
 	test_l2d_output_ranges
 	test_parameter_smoothing
+	test_parameter_controls
 )
 
 # Excluded from automation: these need local fixtures or network and are red on

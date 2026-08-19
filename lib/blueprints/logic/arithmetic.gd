@@ -26,6 +26,17 @@ var b : float :
 	set(v):
 		%InputB.value = v
 
+func _ready() -> void:
+	%InputA.value_changed.connect(func(_v: float):
+		action_updated.emit(0)
+	)
+	%InputB.value_changed.connect(func(_v: float):
+		action_updated.emit(0)
+	)
+	%Operator.item_selected.connect(func(_idx: int):
+		action_updated.emit(0)
+	)
+
 func get_input_slot_by_port(port: int) -> int:
 	match port:
 		0:

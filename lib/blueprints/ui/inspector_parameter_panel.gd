@@ -84,22 +84,21 @@ static func build(action: VtAction, parent: VBoxContainer) -> void:
 			details.visible = source_row.is_details_visible()
 			block.add_child(details)
 
-			# Read-only mirrors of the node's own row. min/max come from the model
-			# or the tracking Registry and are not user-editable remap bounds;
-			# current is a live readout driven by the graph each frame.
-			var min_spin := _make_readout("min")
+			var min_spin := _make_editable_spinbox("min")
+			min_spin.tooltip_text = "Minimum bound"
 			details.add_child(min_spin)
 
-			var max_spin := _make_readout("max")
+			var max_spin := _make_editable_spinbox("max")
+			max_spin.tooltip_text = "Maximum bound"
 			details.add_child(max_spin)
 
-			var cur_spin := _make_readout("")
-			cur_spin.tooltip_text = "Live value"
+			var cur_spin := _make_editable_spinbox("")
+			cur_spin.tooltip_text = "Live value / Manual input"
 			details.add_child(cur_spin)
 
-			Helpers.link_spinboxes(min_spin, source_row.min_value)
-			Helpers.link_spinboxes(max_spin, source_row.max_value)
-			Helpers.link_spinboxes(cur_spin, source_row.current_value)
+			Helpers.link_editable_spinboxes(min_spin, source_row.min_value)
+			Helpers.link_editable_spinboxes(max_spin, source_row.max_value)
+			Helpers.link_editable_spinboxes(cur_spin, source_row.current_value)
 
 			if source_row.smoothing_value != null and source_row.smoothing_value.visible:
 				var smth_spin := _make_editable_spinbox("% smth", 0.0, 100.0, 1.0)
@@ -117,26 +116,18 @@ static func build(action: VtAction, parent: VBoxContainer) -> void:
 	if list != null:
 		_sync_panel_visibility(parent, list)
 
-static func _make_readout(suffix: String) -> SpinBox:
-	var spin := SpinBox.new()
-	spin.step = 0.01
-	spin.editable = false
-	spin.allow_greater = true
-	spin.allow_lesser = true
-	spin.suffix = suffix
-	spin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	return spin
-
 static func _make_editable_spinbox(
 	suffix: String,
-	min_v: float,
-	max_v: float,
-	step_v: float
+	min_v: float = -999999.0,
+	max_v: float = 999999.0,
+	step_v: float = 0.01
 ) -> SpinBox:
 	var spin := SpinBox.new()
 	spin.step = step_v
 	spin.min_value = min_v
 	spin.max_value = max_v
+	spin.allow_greater = true
+	spin.allow_lesser = true
 	spin.rounded = false
 	spin.suffix = suffix
 	spin.alignment = HORIZONTAL_ALIGNMENT_RIGHT

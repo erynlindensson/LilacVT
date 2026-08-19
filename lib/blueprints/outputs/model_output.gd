@@ -51,7 +51,7 @@ func build_slots() -> void:
 		_list.add_group_header(group_name, params.size())
 		for property in params:
 			var meta: Dictionary = parameters[property]
-			var value_range: Vector2 = meta.range
+			var value_range: Vector2 = get_output_range(StringName(property))
 			var vis: bool = model.get("modifiers/parameters/%s/visible" % property)
 			var row := _list.add_parameter_row(
 				property,
@@ -67,6 +67,9 @@ func build_slots() -> void:
 			var current_smth: float = smoothing.get(property, 0.0)
 			row.set_smoothing_value(current_smth)
 			row.smoothing_changed.connect(_on_row_smoothing_changed)
+			row.min_value_changed.connect(_on_row_min_value_changed)
+			row.max_value_changed.connect(_on_row_max_value_changed)
+			row.current_value_changed.connect(_on_row_current_value_changed)
 			label_width = maxf(
 				label_width,
 				row.get_theme_default_font().get_string_size(property).x
@@ -179,7 +182,7 @@ func deserialize(data: Dictionary) -> void:
 	for param in data.get("output_ranges", {}):
 		var r = data["output_ranges"][param]
 		if r is Array and r.size() == 2:
-			output_ranges[String(param)] = Vector2(float(r[0]), float(r[1]))
+			set_output_range(StringName(param), Vector2(float(r[0]), float(r[1])))
 	for param in data.get("smoothing", {}):
 		set_smoothing(StringName(param), float(data["smoothing"][param]))
 	if _list != null:
@@ -188,7 +191,12 @@ func deserialize(data: Dictionary) -> void:
 
 ## Declares the sub-range of a model parameter that a binding should drive.
 func set_output_range(parameter: StringName, value_range: Vector2) -> void:
-	output_ranges[String(parameter)] = value_range
+	var key := String(parameter)
+	output_ranges[key] = value_range
+	if _list != null:
+		var row := _list.get_row(key)
+		if row != null:
+			row.set_value_range(value_range)
 
 func get_output_range(parameter: StringName) -> Vector2:
 	var key := String(parameter)
@@ -223,6 +231,24 @@ func set_smoothing(parameter: StringName, strength: float) -> void:
 func _on_row_smoothing_changed(param: String, strength: float) -> void:
 	set_smoothing(StringName(param), strength)
 
+func _on_row_min_value_changed(param: String, val: float) -> void:
+	var current_range := get_output_range(StringName(param))
+	set_output_range(StringName(param), Vector2(val, current_range.y))
+
+func _on_row_max_value_changed(param: String, val: float) -> void:
+	var current_range := get_output_range(StringName(param))
+	set_output_range(StringName(param), Vector2(current_range.x, val))
+
+func _on_row_current_value_changed(param: String, val: float) -> void:
+	var key := StringName(param)
+	if is_instance_valid(model):
+		var cur = model.get("parameters/%s" % [param])
+		if cur != null and is_equal_approx(float(cur), val):
+			return
+		model.set("parameters/%s" % [param], val)
+	bindings[key] = val
+	_dirty = true
+
 func get_smoothing(parameter: StringName) -> float:
 	return smoothing.get(String(parameter), 0.0)
 
@@ -245,12 +271,15 @@ func _update_model() -> void:
 		_dirty = false
 		return
 
-	for p in bindings:
-		if p in binding_display and is_instance_valid(binding_display[p]):
-			binding_display[p].value = bindings[p]
-		model.set("parameters/%s" % [p], bindings[p])
+	var current_bindings := bindings.duplicate()
 	_dirty = false
 	bindings.clear()
+
+	for p in current_bindings:
+		if p in binding_display and is_instance_valid(binding_display[p]):
+			if not is_equal_approx(binding_display[p].value, current_bindings[p]):
+				binding_display[p].value = current_bindings[p]
+		model.set("parameters/%s" % [p], current_bindings[p])
 
 ## Smoothed parameters advance every frame, not only when a new value arrives,
 ## otherwise the filter freezes partway to its target once input goes quiet.
