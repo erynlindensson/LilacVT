@@ -63,6 +63,10 @@ func build_slots() -> void:
 			)
 			if row == null:
 				continue
+			row.set_smoothing_enabled(true)
+			var current_smth: float = smoothing.get(property, 0.0)
+			row.set_smoothing_value(current_smth)
+			row.smoothing_changed.connect(_on_row_smoothing_changed)
 			label_width = maxf(
 				label_width,
 				row.get_theme_default_font().get_string_size(property).x
@@ -190,12 +194,20 @@ func get_output_range(parameter: StringName) -> Vector2:
 	var key := String(parameter)
 	if key in output_ranges:
 		return output_ranges[key]
-	return model.get("parameters/%s/range" % [key])
+	if is_instance_valid(model):
+		var r = model.get("parameters/%s/range" % [key])
+		if r is Vector2:
+			return r
+	return Vector2(0.0, 1.0)
 
 ## Smoothing strength for a parameter, 0 (off) to 1 (heaviest).
 func set_smoothing(parameter: StringName, strength: float) -> void:
 	var key := String(parameter)
 	strength = clampf(strength, 0.0, 1.0)
+	if _list != null:
+		var row := _list.get_row(key)
+		if row != null:
+			row.set_smoothing_value(strength)
 	if strength <= 0.0:
 		smoothing.erase(key)
 		_filters.erase(key)
@@ -207,6 +219,9 @@ func set_smoothing(parameter: StringName, strength: float) -> void:
 		lerp(0.06, 0.01, strength),
 		lerp(0.004, 0.0002, strength)
 	)
+
+func _on_row_smoothing_changed(param: String, strength: float) -> void:
+	set_smoothing(StringName(param), strength)
 
 func get_smoothing(parameter: StringName) -> float:
 	return smoothing.get(String(parameter), 0.0)
@@ -225,9 +240,14 @@ func update_value(slot: int, v: Variant) -> void:
 func _update_model() -> void:
 	if not _dirty:
 		return
+	if not is_instance_valid(model):
+		bindings.clear()
+		_dirty = false
+		return
 
 	for p in bindings:
-		binding_display[p].value = bindings[p]
+		if p in binding_display and is_instance_valid(binding_display[p]):
+			binding_display[p].value = bindings[p]
 		model.set("parameters/%s" % [p], bindings[p])
 	_dirty = false
 	bindings.clear()

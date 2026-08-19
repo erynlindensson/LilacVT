@@ -190,6 +190,15 @@ func set_row_enabled(param: String, enabled: bool) -> void:
 		host.set_slot_enabled_left(slot, enabled)
 	_sync_visibility()
 
+func get_row(param: String) -> ParameterRow:
+	return _rows.get(param, null)
+
+func set_row_smoothing(param: String, enabled: bool, strength: float = 0.0) -> void:
+	if param in _rows:
+		var row: ParameterRow = _rows[param]
+		row.set_smoothing_enabled(enabled)
+		row.set_smoothing_value(strength)
+
 func _sync_visibility() -> void:
 	for group_name in _group_rows:
 		var collapsed: bool = collapsed_groups.get(group_name, true)

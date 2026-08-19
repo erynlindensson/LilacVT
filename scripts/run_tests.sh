@@ -48,6 +48,7 @@ SCENE_TESTS=(
 	test_blueprint_editor_smoke
 	test_global_input
 	test_l2d_output_ranges
+	test_parameter_smoothing
 )
 
 # Excluded from automation: these need local fixtures or network and are red on

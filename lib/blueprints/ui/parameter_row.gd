@@ -1,12 +1,15 @@
 extends VBoxContainer
 class_name ParameterRow
 
+signal smoothing_changed(param: String, strength: float)
+
 var parameter_name: String = ""
 var _toggle: Button
 var _details: HBoxContainer
 var min_value: SpinBox
 var max_value: SpinBox
 var current_value: SpinBox
+var smoothing_value: SpinBox
 
 static func create(param: String, value_range: Vector2, default_value: float):
 	var row: ParameterRow = load("res://lib/blueprints/ui/parameter_row.gd").new()
@@ -46,6 +49,13 @@ func _build(value_range: Vector2, default_value: float) -> void:
 	_details.add_child(max_value)
 	current_value = _make_spinbox("", default_value)
 	_details.add_child(current_value)
+
+	smoothing_value = _make_editable_spinbox("% smth", 0.0, 0.0, 100.0, 1.0)
+	smoothing_value.tooltip_text = "Smoothing strength % (0 = off, 100 = maximum)"
+	smoothing_value.visible = false
+	smoothing_value.value_changed.connect(_on_smoothing_value_changed)
+	_details.add_child(smoothing_value)
+
 	set_details_visible(false)
 
 func _make_spinbox(suffix: String, value: float) -> SpinBox:
@@ -60,6 +70,35 @@ func _make_spinbox(suffix: String, value: float) -> SpinBox:
 	spin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	spin.editable = false
 	return spin
+
+func _make_editable_spinbox(suffix: String, value: float, min_v: float, max_v: float, step_v: float) -> SpinBox:
+	var spin := SpinBox.new()
+	spin.step = step_v
+	spin.min_value = min_v
+	spin.max_value = max_v
+	spin.rounded = false
+	spin.value = value
+	spin.suffix = suffix
+	spin.alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	spin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	spin.editable = true
+	return spin
+
+func set_smoothing_enabled(enabled: bool) -> void:
+	if smoothing_value != null:
+		smoothing_value.visible = enabled
+
+func set_smoothing_value(strength: float) -> void:
+	if smoothing_value != null:
+		smoothing_value.set_value_no_signal(clampf(strength * 100.0, 0.0, 100.0))
+
+func get_smoothing_value() -> float:
+	if smoothing_value != null:
+		return smoothing_value.value / 100.0
+	return 0.0
+
+func _on_smoothing_value_changed(val: float) -> void:
+	smoothing_changed.emit(parameter_name, val / 100.0)
 
 func set_details_visible(show_details: bool) -> void:
 	_details.visible = show_details

@@ -195,18 +195,9 @@ func _build_parameter_graph(model: VtModel, vtube_data: Dictionary) -> Blueprint
 			_y = max(_y, scalar.size.y + PAD)
 			_x += scalar.size.x + PAD
 			
-		if float(data.get("Smoothing", 0.0)) > 0.0 and input != null:
-			var smoothing: VtAction = graph.spawn_action(&"smoothing", model)
-			smoothing.smoothing = data.get("Smoothing", 0.0) / 100.0
-			graph._on_connection_request(
-				input.name, input_slot,
-				smoothing.name, smoothing.get_input_port_by_name("value")
-			)
-			smoothing.position_offset = Vector2(_x, y)
-			_x += smoothing.size.x + PAD
-			input = smoothing
-			input_slot = smoothing.get_output_port_by_name("value")
-			_y = max(_y, smoothing.size.y + PAD)
+		var smoothing_amount := float(data.get("Smoothing", 0.0))
+		if smoothing_amount > 0.0:
+			model_output.set_smoothing(StringName(data.OutputLive2D), smoothing_amount / 100.0)
 		
 		if input != null:
 			graph._on_connection_request(

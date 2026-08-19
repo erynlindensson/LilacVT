@@ -10,7 +10,7 @@ const Serializers = preload("res://lib/utils/serializers.gd")
 const TransparentAa = preload("res://lib/rendering/transparent_aa.gd")
 
 var modelmeta: ModelMeta
-@onready var mixer = %Mixer
+@onready var mixer = get_node_or_null("%Mixer")
 
 var motions: Array :
 	get():

@@ -85,3 +85,21 @@ static func link_spinboxes(a: SpinBox, b: SpinBox) -> void:
 	a.set_value_no_signal(b.value)
 	a.value_changed.connect(func(v: float): b.set_value_no_signal(v))
 	b.value_changed.connect(func(v: float): a.set_value_no_signal(v))
+
+static func link_editable_spinboxes(a: SpinBox, b: SpinBox) -> void:
+	a.set_value_no_signal(b.value)
+	var syncing := [false]
+	a.value_changed.connect(func(v: float):
+		if syncing[0]:
+			return
+		syncing[0] = true
+		b.value = v
+		syncing[0] = false
+	)
+	b.value_changed.connect(func(v: float):
+		if syncing[0]:
+			return
+		syncing[0] = true
+		a.value = v
+		syncing[0] = false
+	)

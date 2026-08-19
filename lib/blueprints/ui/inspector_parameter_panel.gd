@@ -101,6 +101,12 @@ static func build(action: VtAction, parent: VBoxContainer) -> void:
 			Helpers.link_spinboxes(max_spin, source_row.max_value)
 			Helpers.link_spinboxes(cur_spin, source_row.current_value)
 
+			if source_row.smoothing_value != null and source_row.smoothing_value.visible:
+				var smth_spin := _make_editable_spinbox("% smth", 0.0, 100.0, 1.0)
+				smth_spin.tooltip_text = "Smoothing strength % (0 = off, 100 = maximum)"
+				details.add_child(smth_spin)
+				Helpers.link_editable_spinboxes(smth_spin, source_row.smoothing_value)
+
 			toggle.pressed.connect(func():
 				var show_details := not details.visible
 				details.visible = show_details
@@ -119,6 +125,23 @@ static func _make_readout(suffix: String) -> SpinBox:
 	spin.allow_lesser = true
 	spin.suffix = suffix
 	spin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	return spin
+
+static func _make_editable_spinbox(
+	suffix: String,
+	min_v: float,
+	max_v: float,
+	step_v: float
+) -> SpinBox:
+	var spin := SpinBox.new()
+	spin.step = step_v
+	spin.min_value = min_v
+	spin.max_value = max_v
+	spin.rounded = false
+	spin.suffix = suffix
+	spin.alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	spin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	spin.editable = true
 	return spin
 
 ## Parameters hidden through the model's modifiers have no port and are hidden
