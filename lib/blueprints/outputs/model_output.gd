@@ -6,6 +6,11 @@ const ParameterRow = preload("res://lib/blueprints/ui/parameter_row.gd")
 
 var _list: ParameterList
 var bindings = {}
+## Per-parameter output range overrides, keyed by parameter name.
+## A binding may drive only part of a model parameter's range: MouthSmile is a
+## 0..1 signal, but ParamMouthForm spans -1..1 where 0 is neutral, so mapping the
+## signal across the full range pins a neutral face to a full frown.
+var output_ranges: Dictionary = {}
 var binding_display = {}
 var _dirty = false
 var _refresh = false
@@ -153,19 +158,42 @@ func get_type() -> StringName:
 func serialize() -> Dictionary:
 	if _list == null:
 		return {}
-	return _list.get_ui_state()
+	var data: Dictionary = _list.get_ui_state()
+	# ranges must persist: a saved graph is restored by the ovt loader, which does
+	# not re-run the defaults loader that declared them
+	if not output_ranges.is_empty():
+		var ranges := {}
+		for param in output_ranges:
+			var r: Vector2 = output_ranges[param]
+			ranges[param] = [r.x, r.y]
+		data["output_ranges"] = ranges
+	return data
 
 func get_parameter_list() -> BlueprintParameterList:
 	return _list
 
 func deserialize(data: Dictionary) -> void:
+	for param in data.get("output_ranges", {}):
+		var r = data["output_ranges"][param]
+		if r is Array and r.size() == 2:
+			output_ranges[String(param)] = Vector2(float(r[0]), float(r[1]))
 	if _list != null:
 		_list.load_ui_state(data)
 		_list.finalize_layout()
 
+## Declares the sub-range of a model parameter that a binding should drive.
+func set_output_range(parameter: StringName, value_range: Vector2) -> void:
+	output_ranges[String(parameter)] = value_range
+
+func get_output_range(parameter: StringName) -> Vector2:
+	var key := String(parameter)
+	if key in output_ranges:
+		return output_ranges[key]
+	return model.get("parameters/%s/range" % [key])
+
 func update_value(slot: int, v: Variant) -> void:
 	var parameter: StringName = get_slot_name(slot)
-	var value_range: Vector2 = model.get("parameters/%s/range" % [parameter])
+	var value_range: Vector2 = get_output_range(parameter)
 	bindings[parameter] = lerp(value_range.x, value_range.y, v as float)
 	_dirty = true
 

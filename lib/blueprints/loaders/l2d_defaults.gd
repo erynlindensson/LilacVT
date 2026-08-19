@@ -95,8 +95,11 @@ const DEFAULT_BINDINGS = {
 	],
 	"MouthSmile": [
 		{
+			# MouthSmile is 0..1 with 0 meaning "not smiling", while ParamMouthForm
+			# spans -1..1 with 0 neutral. Driving the full range would rest the face
+			# at a permanent frown, so only the positive half is bound.
 			"name": "ParamMouthForm",
-			"value_range": Vector2(-1, 1)
+			"value_range": Vector2(0, 1)
 		},
 		{
 			"name": "ParamEyeLSmile",
@@ -252,6 +255,11 @@ func load_graph(model: VtModel) -> Array[Blueprint]:
 			var output_slot: int = model_output.get_input_port_by_name(StringName(out_name))
 			if output_slot < 0:
 				continue
+
+			if output_parameter.has("value_range"):
+				model_output.set_output_range(
+					StringName(out_name), output_parameter["value_range"]
+				)
 
 			var _x := x
 			if float(output_parameter.get("smoothing", 0.0)) > 0.0:
