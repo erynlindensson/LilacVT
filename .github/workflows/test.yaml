@@ -30,8 +30,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          # only the submodules the build actually needs; gd_cubism is unused
-          # since the switch to Ayagami
+          # only the submodules the build actually needs
           submodules: false
 
       - name: Fetch ayagami submodule (for the engine patch)

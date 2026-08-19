@@ -1,6 +1,3 @@
-[submodule "thirdparty/gd_cubism"]
-	path = thirdparty/gd_cubism
-	url = https://github.com/erodozer/gd_cubism
 [submodule "thirdparty/ayagami"]
 	path = thirdparty/ayagami
 	url = https://github.com/erynlindensson/ayagami-gd.git

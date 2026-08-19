@@ -76,10 +76,6 @@ theme/custom="res://ui/ui_theme.tres"
 
 [importer_defaults]
 
-gd_cubism.model={
-"Load Expressions": false,
-"Load Motion": false
-}
 texture={
 "compress/channel_pack": 0,
 "compress/hdr_compression": 1,
