@@ -68,10 +68,14 @@ run_test() {
 	local out
 	out="$("${GODOT}" --headless --path "${ROOT}" "$@" 2>&1)"
 	local code=$?
+	local has_errors=0
+	if grep -qE "ERROR: (Index|Cannot|Invalid|failed|Failed|Parse|Unknown|Cannot infer)" <<<"${out}" || grep -q "SCRIPT ERROR" <<<"${out}"; then
+		has_errors=1
+	fi
 	# Godot does not always propagate quit(1), so treat printed failure as fatal.
-	if [[ ${code} -ne 0 ]] || grep -qi "^FAIL\|FAIL " <<<"${out}"; then
+	if [[ ${code} -ne 0 ]] || grep -qi "^FAIL\|FAIL " <<<"${out}" || [[ ${has_errors} -eq 1 ]]; then
 		echo "FAIL ${name}"
-		grep -i "FAIL" <<<"${out}" | head -3
+		grep -E "FAIL|SCRIPT ERROR|ERROR:" <<<"${out}" | head -5
 		fail=$((fail + 1))
 		failed_names+=("${name}")
 	else

@@ -18,6 +18,8 @@ const SLOT_COLORS := {
 	SlotType.VECTOR: Color(0.35, 0.62, 0.95, 1.0),
 }
 
+signal action_updated(slot: int)
+
 ## reference to the bound model is directly available to all VtActions
 var model: VtModel:
 	set = set_model
@@ -103,8 +105,8 @@ func get_slot_by_name(slot: StringName) -> int:
 func get_slot_name(slot: int) -> StringName:
 	return get_child(slot).name
 
-func get_output_type(slot: int):
+func get_output_type(slot: int) -> int:
 	return self.get_slot_type_right(slot)
 	
-func get_input_type(slot: int):
+func get_input_type(slot: int) -> int:
 	return self.get_slot_type_left(slot)

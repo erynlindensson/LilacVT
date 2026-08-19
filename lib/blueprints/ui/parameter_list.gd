@@ -212,7 +212,24 @@ func _sync_visibility() -> void:
 				matching_count > 0 or filter_text.strip_edges().is_empty()
 			)
 
-	host.size.y = 0
+	ports.clear()
+	slots.clear()
+	var current_port := 0
+	if host != null:
+		for child in host.get_children():
+			if child is ParameterRow:
+				var param: String = child.parameter_name
+				if child.visible:
+					ports[param.to_lower()] = current_port
+					slots[current_port] = child.get_index()
+					current_port += 1
+				else:
+					ports[param.to_lower()] = -1
+		host.size.y = 0
+	port_count = current_port
+	layout_changed.emit()
+	if host != null and host.graph != null and host.graph.has_method(&"sync_visual_connections"):
+		host.graph.sync_visual_connections()
 
 func _row_matches_filter(row: ParameterRow) -> bool:
 	var query := filter_text.strip_edges().to_lower()

@@ -73,7 +73,7 @@ func _on_input_pressed() -> void:
 	%Input.text = " + ".join(hotkey.input_as_list)
 	
 func _on_handler_activate() -> void:
-	slot_updated.emit(0)
+	action_updated.emit(0)
 	var t = create_tween()
 	t.tween_property(
 		%Pressed/ColorRect, "modulate", Color.WHITE, 0.15
@@ -83,7 +83,7 @@ func _on_handler_activate() -> void:
 	)
 
 func _on_handler_deactivate() -> void:
-	slot_updated.emit(1)
+	action_updated.emit(1)
 	var t = create_tween()
 	t.tween_property(
 		%Released/ColorRect, "modulate", Color.WHITE, 0.15

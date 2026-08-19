@@ -233,7 +233,10 @@ func _build_model():
 			mesh_settings[StringName(mesh_node.name)] = MeshModifier.new(mesh_node as MeshInstance3D)
 	_rest_aabb = _compute_local_aabb()
 	
-	vp.size = Vector2i(1280, 720)
+	var svc := vp.get_parent() as SubViewportContainer if vp != null else null
+	if svc == null or not svc.stretch:
+		if vp != null:
+			vp.size = Vector2i(1280, 720)
 	
 	var stage_size := get_viewport_rect().size
 	if stage_size.x < 2.0 or stage_size.y < 2.0:

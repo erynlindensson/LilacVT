@@ -26,7 +26,7 @@ func deserialize(data: Dictionary):
 			input.select(i)
 	
 func on_animation_completed():
-	slot_updated.emit(0)
+	action_updated.emit(0)
 
 func get_input_slot_by_port(port: int) -> int:
 	match port:

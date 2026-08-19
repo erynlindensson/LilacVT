@@ -17,6 +17,7 @@ const GROUP_TINTS: Array[Color] = [
 
 var graph_elements: Dictionary[String, GraphNode] = {}
 var graph_frames: Dictionary[String, GraphFrame] = {}
+var _bindings: Array[Dictionary] = []
 
 signal selection_changed(selected: Array)
 
@@ -291,50 +292,119 @@ func refresh_wire_colors() -> void:
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_VISIBILITY_CHANGED and visible:
-		refresh_wire_colors.call_deferred()
+		sync_visual_connections.call_deferred()
+
+func connect_binding(from_node: StringName, from_slot: StringName, to_node: StringName, to_slot: StringName) -> bool:
+	if not is_node_ready():
+		await self.ready
+	var n1 := get_node_or_null(NodePath(from_node)) as VtAction
+	var n2 := get_node_or_null(NodePath(to_node)) as VtAction
+	if n1 == null or n2 == null:
+		return false
+
+	var s1 := n1.get_slot_by_name(from_slot)
+	var s2 := n2.get_slot_by_name(to_slot)
+	if s1 == -1 or s2 == -1:
+		return false
+
+	var out_type = n1.get_output_type(s1)
+	var in_type = n2.get_input_type(s2)
+	if in_type == -1 or out_type == -1:
+		return false
+	if in_type != out_type and not (in_type == VtAction.SlotType.NUMERIC and out_type == VtAction.SlotType.VECTOR):
+		return false
+
+	# Non-triggers can only have one incoming binding per destination slot
+	if in_type != VtAction.SlotType.TRIGGER:
+		var to_remove: Array = []
+		for b in _bindings:
+			if b.to_node == to_node and String(b.to_slot).to_lower() == String(to_slot).to_lower():
+				to_remove.append(b)
+		for b in to_remove:
+			disconnect_binding(b.from_node, b.from_slot, b.to_node, b.to_slot)
+
+	for b in _bindings:
+		if b.from_node == from_node and String(b.from_slot).to_lower() == String(from_slot).to_lower() \
+		and b.to_node == to_node and String(b.to_slot).to_lower() == String(to_slot).to_lower():
+			return true
+
+	_bindings.append({
+		"from_node": from_node,
+		"from_slot": from_slot,
+		"to_node": to_node,
+		"to_slot": to_slot,
+	})
+	n2.bind(s2, n1)
+	sync_visual_connections()
+	return true
+
+func disconnect_binding(from_node: StringName, from_slot: StringName, to_node: StringName, to_slot: StringName) -> void:
+	var target_idx := -1
+	for idx in range(_bindings.size()):
+		var b: Dictionary = _bindings[idx]
+		if b.from_node == from_node and String(b.from_slot).to_lower() == String(from_slot).to_lower() \
+		and b.to_node == to_node and String(b.to_slot).to_lower() == String(to_slot).to_lower():
+			target_idx = idx
+			break
+
+	if target_idx != -1:
+		_bindings.remove_at(target_idx)
+
+	var n1 := get_node_or_null(NodePath(from_node)) as VtAction
+	var n2 := get_node_or_null(NodePath(to_node)) as VtAction
+	if n2 != null:
+		var s2 := n2.get_slot_by_name(to_slot)
+		if s2 != -1:
+			n2.unbind(s2, n1)
+			n2.reset_value(s2)
+
+	sync_visual_connections()
+
+func sync_visual_connections() -> void:
+	clear_connections()
+	for b in _bindings:
+		var from_node := get_node_or_null(NodePath(b.from_node)) as VtAction
+		var to_node := get_node_or_null(NodePath(b.to_node)) as VtAction
+		if from_node == null or to_node == null:
+			continue
+		var from_port: int = from_node.get_output_port_by_name(b.from_slot)
+		var to_port: int = to_node.get_input_port_by_name(b.to_slot)
+		if from_port != -1 and to_port != -1:
+			connect_node(b.from_node, from_port, b.to_node, to_port)
+	refresh_wire_colors()
 
 func _on_connection_request(from_node: StringName, from_port: int, to_node: StringName, to_port: int) -> void:
 	if not is_node_ready():
 		await self.ready
-		
-	var n1: VtAction = get_node(NodePath(from_node))
-	var n2: VtAction = get_node(NodePath(to_node))
-	
+	var n1 := get_node_or_null(NodePath(from_node)) as VtAction
+	var n2 := get_node_or_null(NodePath(to_node)) as VtAction
+	if n1 == null or n2 == null:
+		return
 	var s1: int = n1.get_output_slot_by_port(from_port)
 	var s2: int = n2.get_input_slot_by_port(to_port)
-	
-	var slot_type = n2.get_input_type(s1)
-	# fail to connect
-	if slot_type == -1:
+	if s1 == -1 or s2 == -1:
 		return
-		
-	var count = get_connection_count(to_node, to_port)
-	
-	# only allow more than one binding for Trigger type
-	if slot_type != VtAction.SlotType.TRIGGER and count > 0:
-		var disconnected = connections.filter(
-			func (f):
-				return f.to_node == to_node and f.to_port == to_port
-		)
-		for i in disconnected:
-			disconnect_node(i.from_node, i.from_port, to_node, to_port)
-		
-	connect_node(from_node, from_port, to_node, to_port)
-	n2.bind(s1, n1)
-	refresh_wire_colors.call_deferred()
+	var from_name := n1.get_slot_name(s1)
+	var to_name := n2.get_slot_name(s2)
+	connect_binding(from_node, from_name, to_node, to_name)
 
 func _on_disconnection_request(from_node: StringName, from_port: int, to_node: StringName, to_port: int) -> void:
-	disconnect_node(from_node, from_port, to_node, to_port)
-
-	var source: VtAction = get_node_or_null(NodePath(from_node))
-	var target: VtAction = get_node_or_null(NodePath(to_node))
-	if target != null:
-		# use our own port map rather than GraphNode.get_input_port_slot, whose
-		# internal cache is only populated once the graph has been made visible
-		var field = target.get_input_slot_by_port(to_port)
-		if field != -1:
-			target.unbind(field, source)
-			target.reset_value(field)
+	var n1 := get_node_or_null(NodePath(from_node)) as VtAction
+	var n2 := get_node_or_null(NodePath(to_node)) as VtAction
+	var from_name: StringName = &""
+	var to_name: StringName = &""
+	if n1 != null:
+		var s1 := n1.get_output_slot_by_port(from_port)
+		if s1 != -1:
+			from_name = n1.get_slot_name(s1)
+	if n2 != null:
+		var s2 := n2.get_input_slot_by_port(to_port)
+		if s2 != -1:
+			to_name = n2.get_slot_name(s2)
+	if not from_name.is_empty() and not to_name.is_empty():
+		disconnect_binding(from_node, from_name, to_node, to_name)
+	else:
+		disconnect_node(from_node, from_port, to_node, to_port)
 
 func _on_child_entered_tree(node: Node) -> void:
 	if node is GraphFrame:
@@ -347,14 +417,18 @@ func _on_child_entered_tree(node: Node) -> void:
 		return
 	if node is not VtAction:
 		return
-	
+
 	var id = node.get_meta("id", "")
 	assert(not id.is_empty(), "node has invalid id")
-	
+
 	graph_elements[id] = node
-	node.slot_updated.connect(_on_action.bind(node))
+	node.action_updated.connect(_on_action.bind(node))
 	_connect_selection_signals(node)
-	
+	if node.has_method(&"get_parameter_list"):
+		var plist = node.get_parameter_list()
+		if plist != null and not plist.layout_changed.is_connected(sync_visual_connections):
+			plist.layout_changed.connect(sync_visual_connections)
+
 func _on_child_exiting_tree(node: Node) -> void:
 	if node is GraphFrame:
 		var frame_id = node.get_meta("id", "")
@@ -363,35 +437,44 @@ func _on_child_exiting_tree(node: Node) -> void:
 		return
 	if node is not VtAction:
 		return
-	
+
 	var id = node.get_meta("id", "")
 	if not id.is_empty() and id in graph_elements:
 		graph_elements.erase(id)
-	node.slot_updated.disconnect(_on_action.bind(node))
-		
-func _on_action(from_port: int, node: VtAction):
-	for conn in get_connection_list():
-		if not (conn.from_node == node.name and conn.from_port == from_port):
+	node.action_updated.disconnect(_on_action.bind(node))
+
+func _on_action(from_port_or_slot: int, node: VtAction) -> void:
+	var from_slot := from_port_or_slot
+	if node.get_child_count() > 0:
+		var slot_from_port := node.get_output_slot_by_port(from_port_or_slot)
+		if slot_from_port != -1:
+			from_slot = slot_from_port
+	if from_slot < 0 or from_slot >= node.get_child_count():
+		return
+
+	var from_name := node.get_slot_name(from_slot)
+	var output_type = node.get_output_type(from_slot)
+	var value = node.get_value(from_slot)
+
+	for b in _bindings:
+		if b.from_node != node.name or String(b.from_slot).to_lower() != String(from_name).to_lower():
 			continue
-			
-		var target: VtAction = get_node(NodePath(conn.to_node))
+		var target := get_node_or_null(NodePath(b.to_node)) as VtAction
 		if target == null:
 			continue
-			
-		var from_slot = node.get_output_slot_by_port(from_port)
-		var output = node.get_output_type(from_slot)
-		var to_slot = target.get_input_slot_by_port(conn.to_port)
-		var input = target.get_input_type(to_slot)
+		var to_slot := target.get_slot_by_name(b.to_slot)
 		if to_slot == -1:
 			continue
-		match output:
+		var input_type = target.get_input_type(to_slot)
+		match output_type:
 			VtAction.SlotType.TRIGGER:
 				target.invoke_trigger(to_slot)
 			_:
-				var value = node.get_value(from_slot)
-				if input == VtAction.SlotType.NUMERIC and output == VtAction.SlotType.VECTOR:
-					var vec4 = value as Vector4
-					target.update_value(to_slot, vec4.w)
+				if input_type == VtAction.SlotType.NUMERIC and output_type == VtAction.SlotType.VECTOR:
+					if value is Vector4:
+						target.update_value(to_slot, (value as Vector4).w)
+					else:
+						target.update_value(to_slot, float(value) if value != null else 0.0)
 				else:
 					target.update_value(to_slot, value)
 
@@ -410,17 +493,17 @@ func _on_delete_nodes_request(nodes: Array[StringName]) -> void:
 ## Tears down every connection touching a node so bound targets release it.
 ## Freeing the node alone drops the wires without ever calling unbind.
 func _disconnect_all(node: VtAction) -> void:
-	for conn in get_connection_list():
-		if conn.from_node != node.name and conn.to_node != node.name:
-			continue
-		_on_disconnection_request(
-			conn.from_node, conn.from_port, conn.to_node, conn.to_port
-		)
-		
+	var to_remove: Array = []
+	for b in _bindings:
+		if b.from_node == node.name or b.to_node == node.name:
+			to_remove.append(b)
+	for b in to_remove:
+		disconnect_binding(b.from_node, b.from_slot, b.to_node, b.to_slot)
+
 func serialize() -> Dictionary:
 	var nodes = []
 	var bindings = []
-	
+
 	for i in graph_elements.values():
 		var node = {
 			"id": i.get_meta("id"),
@@ -429,23 +512,21 @@ func serialize() -> Dictionary:
 			"parameters": i.serialize(),
 		}
 		nodes.append(node)
-	
-	for i in connections:
-		var from_node: VtAction = get_node(NodePath(i.from_node))
-		var from_id = from_node.get_meta("id")
-		var to_node: VtAction = get_node(NodePath(i.to_node))
-		var to_id = to_node.get_meta("id")
-		var from_slot = from_node.get_output_slot_by_port(i.from_port)
-		var to_slot = to_node.get_input_slot_by_port(i.to_port)
-		var from_name = from_node.get_slot_name(from_slot)
-		var to_name = to_node.get_slot_name(to_slot)
+
+	for b in _bindings:
+		var from_node := get_node_or_null(NodePath(b.from_node)) as VtAction
+		var to_node := get_node_or_null(NodePath(b.to_node)) as VtAction
+		if from_node == null or to_node == null:
+			continue
+		var from_id = from_node.get_meta("id", "")
+		var to_id = to_node.get_meta("id", "")
 		bindings.append({
 			"src": from_id,
 			"dst": to_id,
-			"src_slot": from_name,
-			"dst_slot": to_name,
+			"src_slot": b.from_slot,
+			"dst_slot": b.to_slot,
 		})
-		
+
 	return {
 		"enabled": process_mode != PROCESS_MODE_DISABLED,
 		"nodes": nodes,

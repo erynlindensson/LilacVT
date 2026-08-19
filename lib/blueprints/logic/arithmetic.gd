@@ -105,7 +105,7 @@ func update_value(slot, value):
 		
 	
 	if dirty:
-		slot_updated.emit(0)
+		action_updated.emit(0)
 	
 func bind(slot: int, _node: GraphNode):
 	if slot == 0:

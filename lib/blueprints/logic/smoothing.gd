@@ -74,4 +74,4 @@ func _on_smoothing_value_changed(value: float) -> void:
 func _process(delta: float) -> void:
 	# smooth the value each frame
 	b = noise_filter.filter(a)
-	slot_updated.emit(0)
+	action_updated.emit(0)

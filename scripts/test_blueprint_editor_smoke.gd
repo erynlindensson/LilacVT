@@ -79,6 +79,31 @@ func _run() -> void:
 	editor.get_node("%InspectorPanel").show_element(frame)
 	await get_tree().process_frame
 
+	# exercise parameter group collapse/expand and search filter on all list actions
+	for action in actions:
+		if action.has_method("get_parameter_list"):
+			var plist: BlueprintParameterList = action.get_parameter_list()
+			if plist != null:
+				# 1. Toggle collapse on each group
+				var group_names := plist._group_rows.keys()
+				for g in group_names:
+					plist.set_group_collapsed(g, true)
+					await get_tree().process_frame
+					_assert_ports_in_bounds(graph)
+
+					plist.set_group_collapsed(g, false)
+					await get_tree().process_frame
+					_assert_ports_in_bounds(graph)
+
+				# 2. Exercise search filtering
+				plist._on_filter_changed("angle")
+				await get_tree().process_frame
+				_assert_ports_in_bounds(graph)
+
+				plist._on_filter_changed("")
+				await get_tree().process_frame
+				_assert_ports_in_bounds(graph)
+
 	# serialize the whole editor state the way save_settings does
 	var model_data := {}
 	editor.save_settings(model_data)
@@ -88,6 +113,19 @@ func _run() -> void:
 
 	print("blueprint_editor_smoke_ok")
 	get_tree().quit(0)
+
+func _assert_ports_in_bounds(graph: Blueprint) -> void:
+	for conn in graph.get_connection_list():
+		var from_node := graph.get_node_or_null(NodePath(conn.from_node)) as GraphNode
+		var to_node := graph.get_node_or_null(NodePath(conn.to_node)) as GraphNode
+		if from_node != null:
+			var out_count := from_node.get_output_port_count()
+			if conn.from_port < 0 or conn.from_port >= out_count:
+				_fail("from_port out of bounds: %d >= %d on %s" % [conn.from_port, out_count, from_node.name])
+		if to_node != null:
+			var in_count := to_node.get_input_port_count()
+			if conn.to_port < 0 or conn.to_port >= in_count:
+				_fail("to_port out of bounds: %d >= %d on %s" % [conn.to_port, in_count, to_node.name])
 
 func _skip(msg: String) -> void:
 	print("SKIP %s" % msg)

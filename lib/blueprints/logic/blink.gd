@@ -77,4 +77,4 @@ func _process(_delta: float) -> void:
 		blinking = now + randf_range(frequency.x, frequency.y) + speed
 	
 	%Value.value = progress
-	slot_updated.emit(0)
+	action_updated.emit(0)

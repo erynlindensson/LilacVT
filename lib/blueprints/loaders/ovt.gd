@@ -56,20 +56,9 @@ func _deserialize(graph: Blueprint, model: VtModel, data: Dictionary):
 			var to_node: VtAction = graph.graph_elements[i.dst]
 			if from_node == null or to_node == null:
 				continue
-			var src_slot = "{0}".format([i.src_slot])
-			var dst_slot = "{0}".format([i.dst_slot])
-			var src_port = from_node.get_output_port_by_name(src_slot)
-			var dst_port = to_node.get_input_port_by_name(dst_slot)
-			if src_port == -1:
-				push_error("invalid slot in graph connection (node: {0}, src: {1})".format([from_node.name, src_slot]))
-				continue
-			if dst_port == -1:
-				push_error("invalid slot in graph connection (node: {0}, dst: {1})".format([to_node.name, dst_slot]))
-				continue
-			graph._on_connection_request.call_deferred(
-				from_node.name, src_port,
-				to_node.name, dst_port
-			)
+			var src_slot = String(i.src_slot)
+			var dst_slot = String(i.dst_slot)
+			graph.connect_binding(from_node.name, src_slot, to_node.name, dst_slot)
 
-	graph.refresh_wire_colors.call_deferred()
+	graph.sync_visual_connections.call_deferred()
 	graph.process_mode = PROCESS_MODE_INHERIT if data.get("enabled", true) else PROCESS_MODE_DISABLED

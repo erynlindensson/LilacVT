@@ -68,19 +68,24 @@ func rebuild_slots() -> void:
 func _apply_default_collapse() -> void:
 	var expanded_groups: Array = []
 	if graph != null:
-		for conn in graph.get_connection_list():
-			if conn.from_node != name:
-				continue
-			var slot_idx := get_output_slot_by_port(conn.from_port)
-			if slot_idx < 0:
-				continue
-			var param := String(get_slot_name(slot_idx))
-			expanded_groups.append(ParameterGrouping.infer_group(param))
+		if "_bindings" in graph:
+			for b in graph._bindings:
+				if b.from_node == name:
+					expanded_groups.append(ParameterGrouping.infer_group(String(b.from_slot)))
+		else:
+			for conn in graph.get_connection_list():
+				if conn.from_node != name:
+					continue
+				var slot_idx := get_output_slot_by_port(conn.from_port)
+				if slot_idx < 0:
+					continue
+				var param := String(get_slot_name(slot_idx))
+				expanded_groups.append(ParameterGrouping.infer_group(param))
 	_list.set_default_collapse(expanded_groups)
 	_list.finalize_layout()
 	ensure_slot_colors()
-	if graph != null and graph.has_method(&"refresh_wire_colors"):
-		graph.refresh_wire_colors()
+	if graph != null and graph.has_method(&"sync_visual_connections"):
+		graph.sync_visual_connections()
 
 func get_type() -> StringName:
 	return &"tracking_input"
@@ -106,8 +111,11 @@ func _on_parameters_updated(parameters, _delta) -> void:
 	for p in parameters:
 		if p in values:
 			values[p] = parameters[p]
-			value_displays[p].value = parameters[p]
-			slot_updated.emit(get_output_port_by_name(p))
+			if p in value_displays and is_instance_valid(value_displays[p]):
+				value_displays[p].value = parameters[p]
+			var slot_idx := get_slot_by_name(p)
+			if slot_idx != -1:
+				action_updated.emit(slot_idx)
 
 func get_input_slot_by_port(_port: int) -> int:
 	return -1
@@ -126,12 +134,16 @@ func get_output_port_by_name(slot: StringName) -> int:
 	return _list.ports.get(slot.to_lower(), -1)
 
 func get_value(slot: int):
+	if slot < 0 or slot >= get_child_count():
+		return Vector4.ZERO
 	var parameter: StringName = get_slot_name(slot)
-	var out: float = values[parameter]
-	var value_range = Registry.get(parameter).range
+	var out: float = values.get(parameter, Registry.get_default(parameter))
+	var meta = Registry[parameter]
+	var value_range: Vector2 = meta.range if meta != null and meta is Dictionary and meta.has("range") else Vector2(0, 1)
+	var normalized: float = inverse_lerp(value_range.x, value_range.y, out) if value_range.x != value_range.y else 0.0
 	return Vector4(
 		value_range.x,
 		value_range.y,
 		out,
-		inverse_lerp(value_range.x, value_range.y, out)
+		normalized
 	)

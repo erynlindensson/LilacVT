@@ -261,20 +261,12 @@ func load_graph(model: VtModel) -> Array[Blueprint]:
 					StringName(out_name), output_parameter["value_range"]
 				)
 
+			# smoothing is a property of the output parameter rather than a node in
+			# the graph; a node per binding made 17 of 22 nodes in this graph
 			var _x := x
-			if float(output_parameter.get("smoothing", 0.0)) > 0.0:
-				var smoothing: VtAction = graph.spawn_action(&"smoothing", model)
-				if smoothing == null:
-					continue
-				smoothing.smoothing = float(output_parameter.get("smoothing", 0.0)) / 100.0
-				graph._on_connection_request(
-					input.name, input_slot,
-					smoothing.name, smoothing.get_input_port_by_name("value")
-				)
-				smoothing.position_offset = Vector2(_x, y)
-				_x += smoothing.size.x + PAD
-				input = smoothing
-				input_slot = smoothing.get_output_port_by_name("value")
+			var smoothing_amount := float(output_parameter.get("smoothing", 0.0))
+			if smoothing_amount > 0.0:
+				model_output.set_smoothing(StringName(out_name), smoothing_amount / 100.0)
 
 			graph._on_connection_request(
 				input.name, input_slot,
